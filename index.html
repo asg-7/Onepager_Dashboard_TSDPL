@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalinganagar Plant Analytics</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <script src="libs/xlsx.min.js"></script>
+    <script>if (!window.XLSX) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>')</script>
+    <script src="libs/chart.min.js"></script>
+    <script>if (!window.Chart) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>')</script>
+    <style>
+        :root {
+            --bg: #080c16;
+            --surface: #0f1629;
+            --surface2: #161f3a;
+            --border: #1e2d4a;
+            --accent: #38bdf8;
+            --accent2: #7dd3fc;
+            --accent3: #34d399;
+            --accent4: #f87171;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --mono: 'Montserrat', 'Space Mono', monospace;
+            --sans: 'Proxima Nova', 'Lato', 'DM Sans', sans-serif;
+            --radius: 8px;
+            --transition-speed: 0.3s;
+        }
+
+        *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── UPLOAD SCREEN ── */
+        #uploadScreen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+            padding: 40px 20px;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+            transition: opacity var(--transition-speed) ease;
+        }
+        #uploadScreen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 20% 30%, rgba(56,189,248,0.07) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 50% at 80% 70%, rgba(125,211,252,0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .upload-logo { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; }
+        .upload-title { font-family: var(--mono); font-size: clamp(22px,4vw,38px); font-weight: 700; color: var(--text); text-align: center; line-height: 1.2; }
+        .upload-title span { color: var(--accent); }
+        .upload-subtitle { color: var(--muted); font-size: 14px; text-align: center; max-width: 480px; line-height: 1.7; }
+        .drop-zone {
+            width: 100%; max-width: 520px;
+            border: 2px dashed var(--border);
+            border-radius: 12px; padding: 52px 32px;
+            text-align: center; cursor: pointer;
+            transition: border-color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+            background: var(--surface); position: relative;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(56,189,248,0.05); transform: translateY(-2px); }
+        .drop-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+        .drop-label { font-family: var(--mono); font-size: 13px; color: var(--text); margin-bottom: 8px; }
+        .drop-hint { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+        #fileInput { display: none; }
+        .btn-upload {
+            display: inline-block; padding: 10px 28px;
+            background: var(--accent); color: #080c16;
+            font-family: var(--mono); font-size: 12px; font-weight: 700;
+            letter-spacing: 1px; border-radius: var(--radius); border: none;
+            cursor: pointer; transition: opacity 0.2s ease, transform 0.2s ease;
+            text-transform: uppercase;
+        }
+        .btn-upload:hover { opacity: 0.85; transform: translateY(-1px); }
+        .sheet-reqs { max-width: 520px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; }
+        .sheet-reqs h3 { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+        .sheet-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .sheet-list li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+        .sheet-list li code { font-family: var(--mono); font-size: 11px; background: var(--surface2); color: var(--accent2); padding: 2px 8px; border-radius: 4px; min-width: 180px; }
+        #uploadError { display: none; max-width: 520px; background: rgba(248,113,113,0.1); border: 1px solid var(--accent4); border-radius: var(--radius); padding: 14px 18px; font-size: 13px; color: var(--accent4); }
+
+        /* ── DASHBOARD SCREEN ── */
+        #dashScreen { display: none; min-height: 100vh; animation: dashFadeIn 0.5s ease forwards; }
+        @keyframes dashFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dash-header {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 16px 28px; display: flex; align-items: center;
+            justify-content: space-between; gap: 16px; flex-wrap: wrap;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .dash-brand { display: flex; flex-direction: column; gap: 2px; }
+        .dash-brand-name { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+        .dash-brand-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; }
+        .dash-header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .data-badge {
+            font-family: var(--mono); font-size: 11px; color: var(--accent3);
+            background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3);
+            padding: 4px 12px; border-radius: 20px;
+        }
+        .data-badge.filtered { color: var(--accent); background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); }
+        .btn-reload {
+            padding: 7px 16px; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); font-family: var(--mono); font-size: 11px;
+            border-radius: var(--radius); cursor: pointer; letter-spacing: 0.5px;
+            transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+        }
+        .btn-reload:hover { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.05); }
+        .btn-download {
+            padding: 7px 16px; background: var(--accent); border: none;
+            color: #080c16; font-family: var(--mono); font-size: 11px; font-weight: 700;
+            border-radius: var(--radius); cursor: pointer; letter-spacing: 0.5px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .btn-download:hover { opacity: 0.85; transform: translateY(-1px); }
+
+        /* ── FILTER BAR ── */
+        #filterBar {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 28px; background: var(--surface);
+            border-bottom: 1px solid var(--border); flex-wrap: wrap;
+            animation: filterSlideIn 0.4s ease forwards;
+        }
+        @keyframes filterSlideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-label { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+        .filter-select {
+            appearance: none; -webkit-appearance: none;
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); font-family: var(--sans); font-size: 13px;
+            padding: 7px 32px 7px 12px; border-radius: var(--radius); cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; min-width: 130px;
+        }
+        .filter-select:hover { border-color: var(--accent); }
+        .filter-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
+        .filter-select option { background: var(--surface); color: var(--text); }
+        .btn-reset-filters {
+            padding: 7px 14px; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); font-family: var(--mono); font-size: 10px;
+            border-radius: var(--radius); cursor: pointer; letter-spacing: 0.5px;
+            transition: all 0.2s ease; white-space: nowrap;
+        }
+        .btn-reset-filters:hover { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.05); }
+
+        /* ── PERIOD PILLS ── */
+        .period-pill-group { display: flex; gap: 4px; }
+        .period-pill {
+            padding: 6px 12px; font-family: var(--mono); font-size: 10px; font-weight: 600;
+            letter-spacing: 0.8px; text-transform: uppercase; border-radius: 20px;
+            border: 1px solid var(--border); background: transparent; color: var(--muted);
+            cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+        }
+        .period-pill:hover { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.06); }
+        .period-pill.active { background: var(--accent); border-color: var(--accent); color: #080c16; }
+
+        /* ── DATE RANGE PANEL ── */
+        #dateRangePanel {
+            display: none;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            animation: filterSlideIn 0.3s ease forwards;
+        }
+        .date-range-inner {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .date-range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .date-input-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .date-input-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .date-range-sep {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 18px;
+            letter-spacing: 2px;
+        }
+        .custom-date-input {
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--surface2);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: box-shadow 0.2s ease;
+            box-shadow: 0 0 0 2px rgba(56,189,248,0.12);
+            min-width: 150px;
+        }
+        .custom-date-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(56,189,248,0.25);
+        }
+        .custom-date-input::-webkit-calendar-picker-indicator {
+            filter: invert(0.7) sepia(1) saturate(3) hue-rotate(180deg);
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .custom-date-input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: var(--border);
+            box-shadow: none;
+        }
+        .date-range-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            min-width: 200px;
+        }
+        .date-range-info-title {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+        .date-range-info-val {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text);
+        }
+        .date-range-info-count {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--accent3);
+        }
+        .date-available-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-width: 520px;
+            max-height: 72px;
+            overflow-y: auto;
+        }
+        .date-chip {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .date-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.08); }
+        .date-chip.in-range { border-color: rgba(56,189,248,0.4); color: var(--accent2); background: rgba(56,189,248,0.1); }
+        .date-chips-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 1.2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+        .date-range-apply {
+            padding: 8px 20px;
+            background: var(--accent);
+            color: #080c16;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            align-self: flex-end;
+            margin-top: 18px;
+        }
+        .date-range-apply:hover { opacity: 0.85; transform: translateY(-1px); }
+
+        /* LINE TABS */
+        #lineTabs {
+            display: flex; align-items: center; gap: 4px;
+            padding: 10px 28px; background: var(--surface);
+            border-bottom: 1px solid var(--border); overflow-x: auto;
+        }
+        .line-tab {
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            padding: 6px 18px; border-radius: var(--radius);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--muted); cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+        }
+        .line-tab:hover { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,0.05); }
+        .line-tab.active { background: var(--accent); border-color: var(--accent); color: #080c16; }
+
+        /* KPI STRIP */
+        .kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+        .kpi-card { background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; transition: background var(--transition-speed) ease, transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease; }
+        .kpi-card:hover { background: var(--surface2); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; font-family: var(--mono); }
+        .kpi-value { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+        .kpi-unit { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+        .kpi-card.accent-yellow .kpi-value { color: var(--accent); }
+        .kpi-card.accent-blue .kpi-value { color: var(--accent2); }
+        .kpi-card.accent-green .kpi-value { color: var(--accent3); }
+        .kpi-card.accent-red .kpi-value { color: var(--accent4); }
+
+        .section-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; padding: 20px 28px 0; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 16px 28px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; padding: 0 28px 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; padding: 0 28px 16px; }
+        @media(max-width:1200px) { .grid-3 { grid-template-columns: repeat(2,1fr); } .grid-4 { grid-template-columns: repeat(2,1fr); } }
+        @media(max-width:768px) {
+            .grid-3,.grid-2,.grid-4 { grid-template-columns: 1fr; padding: 0 14px 14px; }
+            .section-label { padding: 16px 14px 0; }
+            .dash-header { padding: 12px 14px; }
+            #filterBar { padding: 12px 14px; gap: 10px; }
+            .filter-select { min-width: 100px; font-size: 12px; padding: 6px 28px 6px 10px; }
+            #dateRangePanel { padding: 12px 14px; }
+        }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease, border-color var(--transition-speed) ease; animation: cardFadeUp 0.45s ease forwards; }
+        @keyframes cardFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .card:hover { border-color: rgba(56,189,248,0.3); box-shadow: 0 4px 24px rgba(0,0,0,0.25); }
+        .card-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .card-title { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+        .card-tag { font-family: var(--mono); font-size: 10px; color: var(--accent2); background: rgba(125,211,252,0.1); border: 1px solid rgba(125,211,252,0.2); padding: 2px 8px; border-radius: 20px; }
+        .card-body { padding: 16px; }
+        .chart-wrap { position: relative; width: 100%; height: 220px; }
+        .chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+        .dash-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .dash-table thead tr { border-bottom: 1px solid var(--border); }
+        .dash-table th { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; padding: 10px 12px; text-align: right; font-weight: 500; }
+        .dash-table th:first-child { text-align: left; }
+        .dash-table td { padding: 9px 12px; border-bottom: 1px solid rgba(30,45,74,0.6); font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+        .dash-table td:first-child { color: var(--text); text-align: left; font-family: var(--sans); font-size: 13px; }
+        .dash-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+        .dash-table tbody tr:last-child td { border-bottom: none; }
+        .dash-table tfoot td { border-top: 1px solid var(--border); border-bottom: none; color: var(--text) !important; font-weight: 700; font-family: var(--mono); font-size: 12px; text-align: right; padding: 10px 12px; }
+        .dash-table tfoot td:first-child { text-align: left; font-family: var(--mono); }
+
+        .dash-footer { border-top: 1px solid var(--border); padding: 16px 28px; font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.5px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+        #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(8,12,22,0.9); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+        #loadingOverlay.active { display: flex; animation: fadeInOverlay 0.25s ease forwards; }
+        @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+        .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+        .no-data-msg { text-align: center; padding: 24px; color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: 1px; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        @media print {
+            body { background: white; color: #000; }
+            :root { --bg: white; --surface: white; --surface2: #f5f5f5; --border: #ddd; --text: #000; --muted: #555; --accent: #0284c7; --accent2: #38bdf8; }
+            .dash-header { position: static; }
+            .btn-reload,.btn-download,.btn-upload,#filterBar,#lineTabs,.btn-reset-filters,#dateRangePanel { display: none; }
+            .grid-3,.grid-2,.grid-4 { grid-template-columns: repeat(2,1fr); }
+            .kpi-strip { grid-template-columns: repeat(4,1fr); }
+            .card { animation: none; break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">PROCESSING EXCEL DATA…</div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div id="uploadScreen">
+    <div class="upload-logo">Kalinganagar Plant Analytics</div>
+    <div class="upload-title">One-Pager<br><span>Production Dashboard</span></div>
+    <p class="upload-subtitle">Upload your SAP Excel export and get an interactive production &amp; inventory dashboard instantly — no server, no Python required.</p>
+
+    <div class="drop-zone" id="dropZone">
+        <span class="drop-icon">📊</span>
+        <div class="drop-label">Drop your Excel file here</div>
+        <div class="drop-hint">.xlsx files only · SAP export format</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <button class="btn-upload" id="btnChooseFile">Choose File</button>
+    </div>
+
+    <div id="uploadError"></div>
+
+    <div class="sheet-reqs">
+        <h3>Required Sheet Names</h3>
+        <ul class="sheet-list">
+            <li><code>FG</code> Finished Goods inventory</li>
+            <li><code>RM</code> Raw Materials inventory</li>
+            <li><code>Production Report(FG)</code> FG production rows</li>
+            <li><code>Production Report(RM)</code> RM production rows</li>
+        </ul>
+    </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div id="dashScreen">
+
+    <header class="dash-header">
+        <div class="dash-brand">
+            <div class="dash-brand-name">KALINGANAGAR PLANT</div>
+            <div class="dash-brand-sub" id="headerSub">One-Pager Analytics</div>
+        </div>
+        <div class="dash-header-right">
+            <div class="data-badge" id="dataBadge">● DATA LOADED</div>
+            <button class="btn-reload" onclick="resetToDrop()">↺ NEW FILE</button>
+            <button class="btn-download" id="downloadBtn">⬇ DOWNLOAD REPORT</button>
+        </div>
+    </header>
+
+    <!-- FILTER BAR -->
+    <div id="filterBar">
+        <div class="filter-group">
+            <span class="filter-label">Line</span>
+            <select class="filter-select" id="filterLine">
+                <option value="ALL">All Lines</option>
+                <option value="WCTL1">WCTL1</option>
+                <option value="WCTL2">WCTL2</option>
+                <option value="SLIT">SLIT</option>
+            </select>
+        </div>
+        <div class="filter-group" id="periodFilterGroup">
+            <span class="filter-label">Period</span>
+            <div class="period-pill-group" id="periodPills">
+                <button class="period-pill active" data-period="ALL">All Time</button>
+                <button class="period-pill" data-period="TODAY">Today</button>
+                <button class="period-pill" data-period="MTD">This Month</button>
+                <button class="period-pill" data-period="CUSTOM">📅 Date Range</button>
+            </div>
+            <select class="filter-select" id="filterPeriod" style="display:none;">
+                <option value="ALL">All Time</option>
+                <option value="TODAY">Today Only</option>
+                <option value="MTD">Month-to-Date</option>
+                <option value="CUSTOM">Custom Range</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">Shift</span>
+            <select class="filter-select" id="filterShift">
+                <option value="ALL">All Shifts</option>
+                <option value="A">Morning (A)</option>
+                <option value="B">Afternoon (B)</option>
+                <option value="C">Night (C)</option>
+            </select>
+        </div>
+        <button class="btn-reset-filters" id="btnResetFilters">↻ RESET FILTERS</button>
+    </div>
+
+    <!-- DATE RANGE PANEL (shown when CUSTOM selected) -->
+    <div id="dateRangePanel">
+        <div class="date-range-inner">
+            <div class="date-range-inputs">
+                <div class="date-input-block">
+                    <span class="date-input-label">From</span>
+                    <input type="date" id="dateFromInput" class="custom-date-input" />
+                </div>
+                <div class="date-range-sep">→</div>
+                <div class="date-input-block">
+                    <span class="date-input-label">To</span>
+                    <input type="date" id="dateToInput" class="custom-date-input" />
+                </div>
+                <button class="date-range-apply" id="btnApplyRange">APPLY</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div class="date-range-info">
+                    <div class="date-range-info-title">Data Available In File</div>
+                    <div class="date-range-info-val" id="drInfoRange">—</div>
+                    <div class="date-range-info-count" id="drInfoCount">—</div>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:6px; max-width:560px;">
+                <span class="date-chips-label">Quick select — available dates</span>
+                <div class="date-available-chips" id="dateChips"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINE TABS -->
+    <div id="lineTabs">
+        <button class="line-tab active" data-line="ALL">All Lines</button>
+        <button class="line-tab" data-line="WCTL1">WCTL1</button>
+        <button class="line-tab" data-line="WCTL2">WCTL2</button>
+        <button class="line-tab" data-line="SLIT">SLIT</button>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip">
+        <div class="kpi-card accent-yellow">
+            <div class="kpi-label">Total FG</div>
+            <div class="kpi-value" id="kpi-fg-total">—</div>
+            <div class="kpi-unit">MT (TSDPL + CPDY)</div>
+        </div>
+        <div class="kpi-card accent-blue">
+            <div class="kpi-label">Total RM</div>
+            <div class="kpi-value" id="kpi-rm-total">—</div>
+            <div class="kpi-unit">MT in-stock</div>
+        </div>
+        <div class="kpi-card accent-green">
+            <div class="kpi-label">Today's Production</div>
+            <div class="kpi-value" id="kpi-prod-today">—</div>
+            <div class="kpi-unit">MT on-date actual</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Month-to-Date</div>
+            <div class="kpi-value" id="kpi-prod-mtd">—</div>
+            <div class="kpi-unit">MT to-date actual</div>
+        </div>
+        <div class="kpi-card accent-red">
+            <div class="kpi-label">Quality Hold</div>
+            <div class="kpi-value" id="kpi-qhold">—</div>
+            <div class="kpi-unit">MT held</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Without Order</div>
+            <div class="kpi-value" id="kpi-wo">—</div>
+            <div class="kpi-unit">MT unallocated</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">RM In-Transit</div>
+            <div class="kpi-value" id="kpi-rm-transit">—</div>
+            <div class="kpi-unit">MT incoming</div>
+        </div>
+    </div>
+
+    <!-- PRODUCTION -->
+    <div class="section-label">Production Report</div>
+    <div class="grid-2" style="padding-top:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">On-Date Actual (MT)</div><div class="card-tag">FG + RM</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr><th>Line</th><th>FG (MT)</th><th>RM (MT)</th></tr></thead>
+                    <tbody id="prodOnDateBody"></tbody>
+                    <tfoot><tr id="prodOnDateTot"><td>TOTAL</td><td>—</td><td>—</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">To-Date Actual (MT)</div><div class="card-tag">FG + RM</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr><th>Line</th><th>FG (MT)</th><th>RM (MT)</th></tr></thead>
+                    <tbody id="prodToDateBody"></tbody>
+                    <tfoot><tr id="prodToDateTot"><td>TOTAL</td><td>—</td><td>—</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FG INVENTORY -->
+    <div class="section-label">FG Inventory — Age Buckets</div>
+    <div class="grid-2" style="padding-top:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">TSDPL Location</div><div class="card-tag">FG</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table" id="tsdplTable">
+                    <thead><tr><th>Line</th><th>&lt;7d</th><th>7–30d</th><th>30–60d</th><th>60–90d</th><th>90–180d</th><th>&gt;180d</th><th>Total</th></tr></thead>
+                    <tbody id="tsdplBody"></tbody>
+                    <tfoot><tr id="tsdplTot"></tr></tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">CPDY Location</div><div class="card-tag">FG</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table" id="cpdyTable">
+                    <thead><tr><th>Line</th><th>&lt;7d</th><th>7–30d</th><th>30–60d</th><th>60–90d</th><th>90–180d</th><th>&gt;180d</th><th>Total</th></tr></thead>
+                    <tbody id="cpdyBody"></tbody>
+                    <tfoot><tr id="cpdyTot"></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW 1 -->
+    <div class="section-label">Visual Analytics</div>
+    <div class="grid-3" style="padding-top:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">FG by Age Bucket — TSDPL</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartTSDPL"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">FG by Age Bucket — CPDY</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartCPDY"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">Production — On-Date vs To-Date</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartProd"></canvas></div></div>
+        </div>
+    </div>
+
+    <!-- WO + QH -->
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Without-Order WF</div><div class="card-tag">FG</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr><th>Line</th><th>MT</th></tr></thead>
+                    <tbody id="woBody"></tbody>
+                    <tfoot><tr id="woTot"><td>TOTAL</td><td>—</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">Quality Hold</div><div class="card-tag">FG</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr><th>Line</th><th>MT</th></tr></thead>
+                    <tbody id="qhBody"></tbody>
+                    <tfoot><tr id="qhTot"><td>TOTAL</td><td>—</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RM STATUS -->
+    <div class="section-label">RM Status</div>
+    <div style="padding: 16px 28px 0;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Raw Material Status by Line</div><div class="card-tag">RM</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr>
+                        <th>Line</th>
+                        <th>≤3d Count</th><th>≤3d MT</th>
+                        <th>&gt;3d Count</th><th>&gt;3d MT</th>
+                        <th>In-Stock Count</th><th>In-Stock MT</th>
+                        <th>In-Transit MT</th>
+                    </tr></thead>
+                    <tbody id="rmBody"></tbody>
+                    <tfoot><tr id="rmTot"></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW 2 -->
+    <div class="grid-2" style="padding-top:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Without-Order &amp; Quality Hold by Line</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartWoQh"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">RM In-Stock vs In-Transit (MT)</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartRM"></canvas></div></div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW 3 -->
+    <div class="section-label">Inventory Composition &amp; Trends</div>
+    <div class="grid-3" style="padding-top:16px;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">FG Split — TSDPL vs CPDY</div><div class="card-tag">Donut</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:200px;"><canvas id="chartFGSplit"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">FG Age Distribution — Combined</div><div class="card-tag">Radar</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:200px;"><canvas id="chartFGRadar"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">Quality Risk Profile</div><div class="card-tag">Doughnut</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:200px;"><canvas id="chartQRisk"></canvas></div></div>
+        </div>
+    </div>
+
+    <div class="grid-2" style="padding-top:0;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Production Trend — FG vs RM (Today vs MTD)</div><div class="card-tag">Line</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartProdTrend"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">RM Coverage — Age Breakdown by Line</div><div class="card-tag">Stacked</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartRMAge"></canvas></div></div>
+        </div>
+    </div>
+
+    <footer class="dash-footer">
+        <span id="footerFile">—</span>
+        <span>Kalinganagar Plant Analytics · Pure browser — no server required</span>
+    </footer>
+
+</div><!-- /dashScreen -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const CONFIG = {
+    lines: ["WCTL1", "WCTL2", "SLIT"],
+    rm_line_mapping: { CTL1: "WCTL1", CTL2: "WCTL2", SLIT: "SLIT" },
+    status_codes: {
+        in_stock: ["IS", "SC", "1C", "2C"],
+        in_transit: ["IB", "RQ", "IN"]
+    },
+    locations: { tsdpl: "TSDPL", cpdy: "CPDY" },
+    age_buckets: {
+        labels: ["<7 Days", "7–30 Days", "30–60 Days", "60–90 Days", "90–180 Days", ">180 Days"],
+        upper_bounds: [7, 30, 60, 90, 180, null]
+    },
+    sheet_names: {
+        fg: "FG",
+        rm: "RM",
+        prod_fg: "Production Report(FG)",
+        prod_rm: "Production Report(RM)"
+    }
+};
+
+const ALIASES = {
+    proc_line: ["PROC Line","PROC line","Proc. Line","Proc Line","Processing Line","ProcLine","PROCLINE","PROC_LINE"],
+    net_wt: ["NET WT","Net Wt","Net Weight","NET WEIGHT","NETWT","NWT","Net_Wt","NET_WT"],
+    bundle_age: ["Bundle Age","BUNDLE AGE","BundleAge","BUNDLEAGE","Age","AGE","Bundle_Age","BUNDLE_AGE"],
+    location: ["Location","LOCATION","Loc","LOC","Storage Location","StorageLoc","STORAGE LOC","Stor. Location"],
+    quality_hold: ["Quality Hold","QUALITY HOLD","QHold","Q Hold","QH","Quality_Hold","QUALITY_HOLD","Qual Hold"],
+    order_id: ["ORDER ID","ORDER id","Order ID","OrderID","SO Number","SalesOrder","Sales Order","ORDER_ID","SO No"],
+    date_creation: ["DATE CREATION","DATE Creation","Date Creation","Creat.Date","Creation Date","CREATION DATE","Doc. Date","Document Date","DATE_CREATION"],
+    material: ["Material","MATERIAL","Mat.","Mat No","Material No","MATERIAL NO","MatNo","Material Number"],
+    status: ["STATUS","Status","Stat","STAT","Stock Status","STOCK STATUS","StockStatus"],
+    mass: ["MASS","Mass","Weight","WEIGHT","Gross Wt","GROSS WT","Gross Weight","MASS (MT)","Mass (MT)"],
+    plant: ["Plant","PLANT","Plt","PLT","Plant Code","PLANT CODE"],
+    batch: ["Batch","BATCH","Batch No","BATCH NO","BatchNo","Batch Number","BATCH NUMBER"],
+    shift: ["Shift","SHIFT","Shifts","Work Shift","WorkShift","WORK SHIFT","Shift Code","SHIFT CODE"],
+    sent_to_cpdy: ["SENT TO CPDY","Sent To CPDY","Sent_To_CPDY","SENTOCPDY","SentToCPDY"]
+};
+
+const ALIAS_MAP = {};
+for (const [canonical, variants] of Object.entries(ALIASES)) {
+    for (const v of variants) ALIAS_MAP[v.toUpperCase()] = canonical;
+}
+
+// ═══════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════
+function safeFloat(v, def=0) {
+    if (v===null||v===undefined||v==='') return def;
+    const n = parseFloat(v);
+    return isNaN(n) ? def : n;
+}
+function normaliseHeader(h) {
+    if (!h) return null;
+    return ALIAS_MAP[String(h).trim().toUpperCase()] || String(h).trim();
+}
+function sheetToNormalisedRows(ws) {
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    if (!raw||raw.length<2) return [];
+    const headers = raw[0].map(normaliseHeader);
+    return raw.slice(1).map(row => {
+        const obj={};
+        headers.forEach((h,i)=>{ if(h) obj[h]=row[i]??''; });
+        return obj;
+    });
+}
+function bucketAge(days) {
+    const bounds=CONFIG.age_buckets.upper_bounds, labels=CONFIG.age_buckets.labels;
+    for(let i=0;i<bounds.length;i++) { if(bounds[i]===null||days<=bounds[i]) return labels[i]; }
+    return labels[labels.length-1];
+}
+function emptyLineMap() { const m={}; CONFIG.lines.forEach(l=>m[l]=0); return m; }
+function fmt(n) { return (Math.round(n*10)/10).toLocaleString('en-IN',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function fmtInt(n) { return Math.round(n).toLocaleString('en-IN'); }
+
+// ═══════════════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════════════
+function excelDateToJs(serial) {
+    if(!serial||isNaN(serial)) return null;
+    return new Date((serial-25569)*86400*1000);
+}
+function parseDate(dateVal) {
+    if(dateVal===null||dateVal===undefined||dateVal==='') return null;
+    if(typeof dateVal==='number') return excelDateToJs(dateVal);
+    const d=new Date(dateVal);
+    return isNaN(d.getTime())?null:d;
+}
+function toYMD(d) {
+    if(!d) return '';
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function ymdToDate(s) {
+    if(!s) return null;
+    const [y,m,d]=s.split('-').map(Number);
+    return new Date(y,m-1,d,0,0,0,0);
+}
+function isToday(dateVal) {
+    const d=parseDate(dateVal); if(!d) return false;
+    const now=new Date();
+    return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+}
+function isCurrentMonth(dateVal) {
+    const d=parseDate(dateVal); if(!d) return false;
+    const now=new Date();
+    return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+}
+function isSameDay(d,target) {
+    return d&&target&&d.getFullYear()===target.getFullYear()&&d.getMonth()===target.getMonth()&&d.getDate()===target.getDate();
+}
+// Is date within [from, to] inclusive (comparing by day)
+function isInRange(dateVal, fromDate, toDate) {
+    const d = parseDate(dateVal);
+    if (!d) return false;
+    const dYMD = toYMD(d);
+    const fromYMD = fromDate ? toYMD(fromDate) : null;
+    const toYMD2 = toDate ? toYMD(toDate) : null;
+    if (fromYMD && dYMD < fromYMD) return false;
+    if (toYMD2 && dYMD > toYMD2) return false;
+    return true;
+}
+
+// ═══════════════════════════════════════════════════
+// FILTER STATE
+// ═══════════════════════════════════════════════════
+let _filterState = { line:'ALL', period:'ALL', shift:'ALL', dateFrom:null, dateTo:null };
+
+function applyRowFilter(row, filterState) {
+    if (filterState.line !== 'ALL') {
+        const rawLine = String(row['proc_line']||'').trim().toUpperCase();
+        const mappedLine = CONFIG.rm_line_mapping[rawLine]||rawLine;
+        if (mappedLine !== filterState.line) return false;
+    }
+    if (filterState.shift !== 'ALL') {
+        const shiftVal = String(row['shift']||'').trim().toUpperCase();
+        if (shiftVal !== filterState.shift) return false;
+    }
+    return true;
+}
+
+function applyProductionPeriodFilter(row, filterState) {
+    if (filterState.period === 'TODAY') return isToday(row['date_creation']);
+    if (filterState.period === 'MTD') return isCurrentMonth(row['date_creation']);
+    if (filterState.period === 'CUSTOM') {
+        return isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo);
+    }
+    return true;
+}
+
+function getFilteredLines() {
+    if (_filterState.line==='ALL') return [...CONFIG.lines];
+    return [_filterState.line];
+}
+
+// ═══════════════════════════════════════════════════
+// AVAILABLE DATES (populated on file load)
+// ═══════════════════════════════════════════════════
+let _availableDates = []; // sorted array of 'YYYY-MM-DD' strings
+
+function buildAvailableDates(allRows) {
+    const set = new Set();
+    for (const row of allRows) {
+        const d = parseDate(row['date_creation']);
+        if (d) set.add(toYMD(d));
+    }
+    return Array.from(set).sort();
+}
+
+function renderDateChips() {
+    const container = document.getElementById('dateChips');
+    const fromVal = document.getElementById('dateFromInput').value;
+    const toVal = document.getElementById('dateToInput').value;
+    container.innerHTML = '';
+    for (const ymd of _availableDates) {
+        const chip = document.createElement('span');
+        chip.className = 'date-chip';
+        // format as DD/MM/YYYY for display
+        const [y,m,d] = ymd.split('-');
+        chip.textContent = `${d}/${m}/${y}`;
+        chip.dataset.ymd = ymd;
+        if (fromVal && toVal && ymd >= fromVal && ymd <= toVal) {
+            chip.classList.add('in-range');
+        }
+        chip.addEventListener('click', function() {
+            // If FROM is not set, set FROM. If FROM is set but TO is not, set TO (if >= FROM).
+            // If both are set, restart from this date as FROM.
+            const from = document.getElementById('dateFromInput').value;
+            const to = document.getElementById('dateToInput').value;
+            const clicked = this.dataset.ymd;
+            if (!from || (from && to)) {
+                // Start fresh: set FROM to clicked, clear TO
+                document.getElementById('dateFromInput').value = clicked;
+                document.getElementById('dateToInput').value = '';
+                document.getElementById('dateToInput').min = clicked;
+            } else {
+                // FROM is set, TO is not — set TO if >= FROM, else swap
+                if (clicked >= from) {
+                    document.getElementById('dateToInput').value = clicked;
+                } else {
+                    document.getElementById('dateToInput').value = from;
+                    document.getElementById('dateFromInput').value = clicked;
+                    document.getElementById('dateToInput').min = clicked;
+                }
+            }
+            renderDateChips();
+        });
+        container.appendChild(chip);
+    }
+}
+
+function updateDateRangeInfo() {
+    const infoRange = document.getElementById('drInfoRange');
+    const infoCount = document.getElementById('drInfoCount');
+    if (_availableDates.length === 0) {
+        infoRange.textContent = 'No dates found in file';
+        infoCount.textContent = '';
+        return;
+    }
+    const first = _availableDates[0];
+    const last = _availableDates[_availableDates.length - 1];
+    const fmtD = ymd => { const [y,m,d]=ymd.split('-'); return `${d}/${m}/${y}`; };
+    infoRange.textContent = `${fmtD(first)} → ${fmtD(last)}`;
+    infoCount.textContent = `${_availableDates.length} unique date${_availableDates.length===1?'':'s'} with data`;
+}
+
+// ═══════════════════════════════════════════════════
+// AGGREGATORS
+// ═══════════════════════════════════════════════════
+function aggregateProduction(fgRows, rmRows, filterState) {
+    const onDate = { fg: emptyLineMap(), rm: emptyLineMap() };
+    const toDate = { fg: emptyLineMap(), rm: emptyLineMap() };
+    const mtd    = { fg: emptyLineMap(), rm: emptyLineMap() };
+    const range  = { fg: emptyLineMap(), rm: emptyLineMap() };
+
+    for (const row of fgRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        const line = String(row['proc_line']||'').trim().toUpperCase();
+        const wt = safeFloat(row['net_wt'])||safeFloat(row['mass']);
+        if (!CONFIG.lines.includes(line)) continue;
+        toDate.fg[line] += wt;
+        if (isToday(row['date_creation'])) onDate.fg[line] += wt;
+        if (isCurrentMonth(row['date_creation'])) mtd.fg[line] += wt;
+        if (isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) range.fg[line] += wt;
+    }
+    for (const row of rmRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        const rawLine = String(row['proc_line']||'').trim().toUpperCase();
+        const line = CONFIG.rm_line_mapping[rawLine]||rawLine;
+        const wt = safeFloat(row['net_wt'])||safeFloat(row['mass']);
+        if (!CONFIG.lines.includes(line)) continue;
+        toDate.rm[line] += wt;
+        if (isToday(row['date_creation'])) onDate.rm[line] += wt;
+        if (isCurrentMonth(row['date_creation'])) mtd.rm[line] += wt;
+        if (isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) range.rm[line] += wt;
+    }
+
+    let displayFg, displayRm;
+    if (filterState.period==='TODAY')       { displayFg=onDate.fg; displayRm=onDate.rm; }
+    else if (filterState.period==='MTD')    { displayFg=mtd.fg; displayRm=mtd.rm; }
+    else if (filterState.period==='CUSTOM') { displayFg=range.fg; displayRm=range.rm; }
+    else                                    { displayFg=toDate.fg; displayRm=toDate.rm; }
+
+    return {
+        onDate, toDate, mtd, range, displayFg, displayRm,
+        effectiveOnDate: (filterState.period==='ALL'||filterState.period==='TODAY') ? onDate :
+                         filterState.period==='CUSTOM' ? range : { fg: emptyLineMap(), rm: emptyLineMap() },
+        effectiveToDate: filterState.period==='ALL' ? toDate :
+                         filterState.period==='MTD' ? mtd :
+                         filterState.period==='CUSTOM' ? range : onDate,
+    };
+}
+
+function aggregateFGInventory(fgRows, locSubstr, filterState) {
+    const result = {};
+    CONFIG.lines.forEach(l => { result[l]={}; CONFIG.age_buckets.labels.forEach(b=>result[l][b]=0); });
+    for (const row of fgRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        // Period filter for FG inventory (date_creation based)
+        if (filterState.period === 'TODAY' && !isToday(row['date_creation'])) continue;
+        if (filterState.period === 'MTD' && !isCurrentMonth(row['date_creation'])) continue;
+        if (filterState.period === 'CUSTOM' && !isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) continue;
+        let loc = String(row['location']||'').toUpperCase();
+        if (loc.startsWith('=')) {
+            const sentToCpdy = String(row['sent_to_cpdy']||'').trim().toUpperCase();
+            loc = (sentToCpdy==='Y') ? 'CPDY' : 'TSDPL';
+        }
+        if (!loc.includes(locSubstr.toUpperCase())) continue;
+        const line = String(row['proc_line']||'').trim().toUpperCase();
+        if (!CONFIG.lines.includes(line)) continue;
+        const wt = safeFloat(row['net_wt'])||safeFloat(row['mass']);
+        const age = safeFloat(row['bundle_age']);
+        const bucket = bucketAge(age);
+        result[line][bucket] = (result[line][bucket]||0) + wt;
+    }
+    return result;
+}
+
+function aggregateWithoutOrder(fgRows, filterState) {
+    const res = emptyLineMap();
+    for (const row of fgRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        if (filterState.period==='TODAY' && !isToday(row['date_creation'])) continue;
+        if (filterState.period==='MTD' && !isCurrentMonth(row['date_creation'])) continue;
+        if (filterState.period==='CUSTOM' && !isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) continue;
+        const line = String(row['proc_line']||'').trim().toUpperCase();
+        if (!CONFIG.lines.includes(line)) continue;
+        const orderId = String(row['order_id']||'').trim();
+        const status = String(row['status']||'').trim().toUpperCase();
+        if (orderId===''||status==='WF') res[line] += safeFloat(row['net_wt'])||safeFloat(row['mass']);
+    }
+    return res;
+}
+
+function aggregateQualityHold(fgRows, filterState) {
+    const res = emptyLineMap();
+    for (const row of fgRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        if (filterState.period==='TODAY' && !isToday(row['date_creation'])) continue;
+        if (filterState.period==='MTD' && !isCurrentMonth(row['date_creation'])) continue;
+        if (filterState.period==='CUSTOM' && !isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) continue;
+        const line = String(row['proc_line']||'').trim().toUpperCase();
+        if (!CONFIG.lines.includes(line)) continue;
+        if (String(row['quality_hold']||'').trim().toUpperCase()==='Y')
+            res[line] += safeFloat(row['net_wt'])||safeFloat(row['mass']);
+    }
+    return res;
+}
+
+function aggregateRMStatus(rmRows, filterState) {
+    const template = () => ({leq3_count:0,leq3_mt:0,gt3_count:0,gt3_mt:0,stock_count:0,stock_mt:0,transit_mt:0});
+    const res = {};
+    CONFIG.lines.forEach(l=>res[l]=template());
+    for (const row of rmRows) {
+        if (!applyRowFilter(row, filterState)) continue;
+        if (filterState.period==='TODAY' && !isToday(row['date_creation'])) continue;
+        if (filterState.period==='MTD' && !isCurrentMonth(row['date_creation'])) continue;
+        if (filterState.period==='CUSTOM' && !isInRange(row['date_creation'], filterState.dateFrom, filterState.dateTo)) continue;
+        const rawLine = String(row['proc_line']||'').trim().toUpperCase();
+        const line = CONFIG.rm_line_mapping[rawLine]||rawLine;
+        if (!CONFIG.lines.includes(line)) continue;
+        const wt = safeFloat(row['net_wt'])||safeFloat(row['mass']);
+        const age = safeFloat(row['bundle_age']);
+        const status = String(row['status']||'').trim().toUpperCase();
+        if (age<=3) { res[line].leq3_count++; res[line].leq3_mt+=wt; } else { res[line].gt3_count++; res[line].gt3_mt+=wt; }
+        if (CONFIG.status_codes.in_stock.includes(status)) { res[line].stock_count++; res[line].stock_mt+=wt; }
+        if (CONFIG.status_codes.in_transit.includes(status)) { res[line].transit_mt+=wt; }
+    }
+    return res;
+}
+
+// ═══════════════════════════════════════════════════
+// CHART INSTANCES
+// ═══════════════════════════════════════════════════
+const _charts = {};
+function destroyAllCharts() {
+    for (const id of Object.keys(_charts)) { if(_charts[id]){_charts[id].destroy(); delete _charts[id];} }
+}
+function makeChart(id, config) {
+    if (_charts[id]) _charts[id].destroy();
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    _charts[id] = new Chart(canvas, config);
+}
+
+const CHART_COLORS = {
+    sky:'rgba(56,189,248,0.85)', light:'rgba(125,211,252,0.85)', green:'rgba(52,211,153,0.85)',
+    red:'rgba(248,113,113,0.85)', purple:'rgba(167,139,250,0.85)', orange:'rgba(251,191,36,0.85)',
+};
+const BUCKET_COLORS = [CHART_COLORS.green,CHART_COLORS.sky,CHART_COLORS.orange,CHART_COLORS.red,'#a78bfa','#f87171'];
+const CHART_DEFAULTS = {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:500, easing:'easeOutQuart'},
+    plugins:{legend:{labels:{color:'#94a3b8',font:{size:11,family:"'Montserrat','Space Mono',monospace"},boxWidth:12}}},
+    scales:{
+        x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(30,45,74,0.8)'}},
+        y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(30,45,74,0.8)'}}
+    }
+};
+
+// ═══════════════════════════════════════════════════
+// STORED DATA
+// ═══════════════════════════════════════════════════
+let _allData = null;
+let _rawWb = null;
+let _fileName = '';
+
+// ═══════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════
+function renderAll() {
+    if (!_allData) return;
+
+    const {fgRows, rmRows, prodFg, prodRm} = _allData;
+    const filterState = {..._filterState};
+
+    const prod     = aggregateProduction(prodFg, prodRm, filterState);
+    const tsdpl    = aggregateFGInventory(fgRows, CONFIG.locations.tsdpl, filterState);
+    const cpdy     = aggregateFGInventory(fgRows, CONFIG.locations.cpdy, filterState);
+    const wo       = aggregateWithoutOrder(fgRows, filterState);
+    const qh       = aggregateQualityHold(fgRows, filterState);
+    const rmStatus = aggregateRMStatus(rmRows, filterState);
+
+    const visibleLines = getFilteredLines();
+
+    // KPIs
+    const totalFG = visibleLines.reduce((s,l)=>s+CONFIG.age_buckets.labels.reduce((a,b)=>a+(tsdpl[l][b]||0)+(cpdy[l][b]||0),0),0);
+    const totalRMStock = visibleLines.reduce((s,l)=>s+rmStatus[l].stock_mt,0);
+    const totalTransit = visibleLines.reduce((s,l)=>s+rmStatus[l].transit_mt,0);
+    const todayProd = visibleLines.reduce((s,l)=>s+prod.onDate.fg[l]+prod.onDate.rm[l],0);
+    const mtdProd   = visibleLines.reduce((s,l)=>s+prod.mtd.fg[l]+prod.mtd.rm[l],0);
+    const totalQH   = visibleLines.reduce((s,l)=>s+qh[l],0);
+    const totalWO   = visibleLines.reduce((s,l)=>s+wo[l],0);
+
+    document.getElementById('kpi-fg-total').textContent = fmt(totalFG);
+    document.getElementById('kpi-rm-total').textContent = fmt(totalRMStock);
+    document.getElementById('kpi-prod-today').textContent = fmt(todayProd);
+    document.getElementById('kpi-prod-mtd').textContent = fmt(mtdProd);
+    document.getElementById('kpi-qhold').textContent = fmt(totalQH);
+    document.getElementById('kpi-wo').textContent = fmt(totalWO);
+    document.getElementById('kpi-rm-transit').textContent = fmt(totalTransit);
+
+    // Production tables
+    function fillProdTable(bodyId, totId, fgData, rmData) {
+        const tbody = document.getElementById(bodyId); tbody.innerHTML='';
+        let tFg=0, tRm=0;
+        for (const l of visibleLines) {
+            tFg+=fgData[l]; tRm+=rmData[l];
+            tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td><td>${fmt(fgData[l])}</td><td>${fmt(rmData[l])}</td></tr>`);
+        }
+        if (visibleLines.length===0) tbody.insertAdjacentHTML('beforeend','<tr><td colspan="3" class="no-data-msg">No data matching filters</td></tr>');
+        const tot = document.getElementById(totId);
+        tot.cells[1].textContent=fmt(tFg); tot.cells[2].textContent=fmt(tRm);
+    }
+    fillProdTable('prodOnDateBody','prodOnDateTot',prod.effectiveOnDate.fg,prod.effectiveOnDate.rm);
+    fillProdTable('prodToDateBody','prodToDateTot',prod.effectiveToDate.fg,prod.effectiveToDate.rm);
+
+    // FG Inventory tables
+    function fillFGTable(bodyId, totId, data) {
+        const tbody=document.getElementById(bodyId); tbody.innerHTML='';
+        const bucks=CONFIG.age_buckets.labels, totals={};
+        bucks.forEach(b=>totals[b]=0);
+        let grandTotal=0;
+        for (const l of visibleLines) {
+            let rowTotal=0;
+            const cells=bucks.map(b=>{totals[b]+=(data[l][b]||0); rowTotal+=(data[l][b]||0); return fmt(data[l][b]||0);});
+            grandTotal+=rowTotal;
+            tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td>${cells.map(c=>`<td>${c}</td>`).join('')}<td><strong>${fmt(rowTotal)}</strong></td></tr>`);
+        }
+        if (visibleLines.length===0) tbody.insertAdjacentHTML('beforeend',`<tr><td colspan="${bucks.length+2}" class="no-data-msg">No data matching filters</td></tr>`);
+        document.getElementById(totId).innerHTML=`<td>TOTAL</td>`+bucks.map(b=>`<td>${fmt(totals[b])}</td>`).join('')+`<td><strong>${fmt(grandTotal)}</strong></td>`;
+    }
+    fillFGTable('tsdplBody','tsdplTot',tsdpl);
+    fillFGTable('cpdyBody','cpdyTot',cpdy);
+
+    // WO + QH tables
+    function fillSimpleTable(bodyId, totId, data) {
+        const tbody=document.getElementById(bodyId); tbody.innerHTML='';
+        let total=0;
+        for (const l of visibleLines) { total+=data[l]; tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td><td>${fmt(data[l])}</td></tr>`); }
+        if (visibleLines.length===0) tbody.insertAdjacentHTML('beforeend','<tr><td colspan="2" class="no-data-msg">No data matching filters</td></tr>');
+        document.getElementById(totId).cells[1].textContent=fmt(total);
+    }
+    fillSimpleTable('woBody','woTot',wo);
+    fillSimpleTable('qhBody','qhTot',qh);
+
+    // RM Status table
+    (function(){
+        const tbody=document.getElementById('rmBody'); tbody.innerHTML='';
+        let t={leq3_count:0,leq3_mt:0,gt3_count:0,gt3_mt:0,stock_count:0,stock_mt:0,transit_mt:0};
+        for (const l of visibleLines) {
+            const r=rmStatus[l];
+            for (const k of Object.keys(t)) t[k]+=r[k];
+            tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td><td>${fmtInt(r.leq3_count)}</td><td>${fmt(r.leq3_mt)}</td><td>${fmtInt(r.gt3_count)}</td><td>${fmt(r.gt3_mt)}</td><td>${fmtInt(r.stock_count)}</td><td>${fmt(r.stock_mt)}</td><td>${fmt(r.transit_mt)}</td></tr>`);
+        }
+        if (visibleLines.length===0) tbody.insertAdjacentHTML('beforeend','<tr><td colspan="8" class="no-data-msg">No data matching filters</td></tr>');
+        document.getElementById('rmTot').innerHTML=`<td>TOTAL</td><td>${fmtInt(t.leq3_count)}</td><td>${fmt(t.leq3_mt)}</td><td>${fmtInt(t.gt3_count)}</td><td>${fmt(t.gt3_mt)}</td><td>${fmtInt(t.stock_count)}</td><td>${fmt(t.stock_mt)}</td><td>${fmt(t.transit_mt)}</td>`;
+    })();
+
+    // Charts
+    const bucks = CONFIG.age_buckets.labels;
+    const chartLines = visibleLines.length>0 ? visibleLines : CONFIG.lines;
+
+    makeChart('chartTSDPL',{type:'bar',data:{labels:chartLines,datasets:bucks.map((b,i)=>({label:b,data:chartLines.map(l=>Math.round((tsdpl[l][b]||0)*10)/10),backgroundColor:BUCKET_COLORS[i],borderWidth:0}))},options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},},plugins:{...CHART_DEFAULTS.plugins}}});
+    makeChart('chartCPDY',{type:'bar',data:{labels:chartLines,datasets:bucks.map((b,i)=>({label:b,data:chartLines.map(l=>Math.round((cpdy[l][b]||0)*10)/10),backgroundColor:BUCKET_COLORS[i],borderWidth:0}))},options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},},plugins:{...CHART_DEFAULTS.plugins}}});
+    makeChart('chartProd',{type:'bar',data:{labels:chartLines,datasets:[{label:'On-Date FG',data:chartLines.map(l=>Math.round(prod.onDate.fg[l]*10)/10),backgroundColor:CHART_COLORS.sky,borderWidth:0},{label:'On-Date RM',data:chartLines.map(l=>Math.round(prod.onDate.rm[l]*10)/10),backgroundColor:CHART_COLORS.light,borderWidth:0},{label:'To-Date FG',data:chartLines.map(l=>Math.round(prod.toDate.fg[l]*10)/10),backgroundColor:'rgba(56,189,248,0.3)',borderWidth:0},{label:'To-Date RM',data:chartLines.map(l=>Math.round(prod.toDate.rm[l]*10)/10),backgroundColor:'rgba(125,211,252,0.3)',borderWidth:0}]},options:CHART_DEFAULTS});
+    makeChart('chartWoQh',{type:'bar',data:{labels:chartLines,datasets:[{label:'Without Order (MT)',data:chartLines.map(l=>Math.round(wo[l]*10)/10),backgroundColor:CHART_COLORS.orange,borderWidth:0},{label:'Quality Hold (MT)',data:chartLines.map(l=>Math.round(qh[l]*10)/10),backgroundColor:CHART_COLORS.red,borderWidth:0}]},options:CHART_DEFAULTS});
+    makeChart('chartRM',{type:'bar',data:{labels:chartLines,datasets:[{label:'In-Stock (MT)',data:chartLines.map(l=>Math.round(rmStatus[l].stock_mt*10)/10),backgroundColor:CHART_COLORS.green,borderWidth:0},{label:'In-Transit (MT)',data:chartLines.map(l=>Math.round(rmStatus[l].transit_mt*10)/10),backgroundColor:CHART_COLORS.sky,borderWidth:0}]},options:CHART_DEFAULTS});
+
+    const tsdplTotal=chartLines.reduce((s,l)=>s+CONFIG.age_buckets.labels.reduce((a,b)=>a+(tsdpl[l][b]||0),0),0);
+    const cpdyTotal =chartLines.reduce((s,l)=>s+CONFIG.age_buckets.labels.reduce((a,b)=>a+(cpdy[l][b]||0),0),0);
+    makeChart('chartFGSplit',{type:'doughnut',data:{labels:['TSDPL','CPDY'],datasets:[{data:[Math.round(tsdplTotal*10)/10,Math.round(cpdyTotal*10)/10],backgroundColor:[CHART_COLORS.sky,CHART_COLORS.purple],borderWidth:2,borderColor:'#0f1629',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{duration:600},plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11,family:"'Montserrat',monospace"},boxWidth:12,padding:14}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toLocaleString('en-IN',{minimumFractionDigits:1,maximumFractionDigits:1})} MT`}}}}});
+
+    const radarData=CONFIG.age_buckets.labels.map(b=>chartLines.reduce((s,l)=>(s+(tsdpl[l][b]||0)+(cpdy[l][b]||0)),0));
+    makeChart('chartFGRadar',{type:'radar',data:{labels:['<7d','7–30d','30–60d','60–90d','90–180d','>180d'],datasets:[{label:'FG Stock (MT)',data:radarData.map(v=>Math.round(v*10)/10),backgroundColor:'rgba(56,189,248,0.15)',borderColor:'rgba(56,189,248,0.8)',pointBackgroundColor:'rgba(56,189,248,1)',pointRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:600},scales:{r:{ticks:{color:'#94a3b8',font:{size:10},backdropColor:'transparent'},grid:{color:'rgba(30,45,74,0.9)'},pointLabels:{color:'#94a3b8',font:{size:10,family:"'Montserrat',monospace"}}}},plugins:{legend:{labels:{color:'#94a3b8',font:{size:11,family:"'Montserrat',monospace"},boxWidth:12}}}}});
+
+    const goodFG=Math.max(0,tsdplTotal+cpdyTotal-totalQH-totalWO);
+    makeChart('chartQRisk',{type:'doughnut',data:{labels:['Available','Quality Hold','Without Order'],datasets:[{data:[Math.round(goodFG*10)/10,Math.round(totalQH*10)/10,Math.round(totalWO*10)/10],backgroundColor:[CHART_COLORS.green,CHART_COLORS.red,CHART_COLORS.orange],borderWidth:2,borderColor:'#0f1629',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:{duration:600},plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:10,family:"'Montserrat',monospace"},boxWidth:12,padding:10}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toLocaleString('en-IN',{minimumFractionDigits:1,maximumFractionDigits:1})} MT`}}}}});
+    makeChart('chartProdTrend',{type:'line',data:{labels:chartLines,datasets:[{label:'Today FG',data:chartLines.map(l=>Math.round(prod.onDate.fg[l]*10)/10),borderColor:CHART_COLORS.sky,backgroundColor:'rgba(56,189,248,0.1)',tension:0.4,fill:true,pointRadius:5,borderWidth:2},{label:'Today RM',data:chartLines.map(l=>Math.round(prod.onDate.rm[l]*10)/10),borderColor:CHART_COLORS.light,backgroundColor:'rgba(125,211,252,0.07)',tension:0.4,fill:true,pointRadius:5,borderWidth:2},{label:'MTD FG',data:chartLines.map(l=>Math.round(prod.mtd.fg[l]*10)/10),borderColor:CHART_COLORS.green,backgroundColor:'transparent',tension:0.4,borderDash:[5,4],pointRadius:4,borderWidth:2},{label:'MTD RM',data:chartLines.map(l=>Math.round(prod.mtd.rm[l]*10)/10),borderColor:CHART_COLORS.purple,backgroundColor:'transparent',tension:0.4,borderDash:[5,4],pointRadius:4,borderWidth:2}]},options:{...CHART_DEFAULTS}});
+    makeChart('chartRMAge',{type:'bar',data:{labels:chartLines,datasets:[{label:'≤3 Days (MT)',data:chartLines.map(l=>Math.round(rmStatus[l].leq3_mt*10)/10),backgroundColor:CHART_COLORS.green,borderWidth:0},{label:'>3 Days (MT)',data:chartLines.map(l=>Math.round(rmStatus[l].gt3_mt*10)/10),backgroundColor:CHART_COLORS.orange,borderWidth:0}]},options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},},plugins:{...CHART_DEFAULTS.plugins}}});
+
+    // Badge
+    const badge = document.getElementById('dataBadge');
+    const hasActiveFilters = _filterState.line!=='ALL'||_filterState.period!=='ALL'||_filterState.shift!=='ALL';
+    badge.textContent = hasActiveFilters ? '● FILTERED' : '● DATA LOADED';
+    badge.classList.toggle('filtered', hasActiveFilters);
+}
+
+// ═══════════════════════════════════════════════════
+// INITIAL RENDER
+// ═══════════════════════════════════════════════════
+function renderDashboard(wb, fileName) {
+    _rawWb = wb; _fileName = fileName;
+    const sheets = wb.SheetNames;
+    const need = [CONFIG.sheet_names.fg,CONFIG.sheet_names.rm,CONFIG.sheet_names.prod_fg,CONFIG.sheet_names.prod_rm];
+    const missing = need.filter(n=>!sheets.includes(n));
+    if (missing.length) { showError(`Missing sheets: ${missing.join(', ')}\n\nFound: ${sheets.join(', ')}`); return; }
+
+    const fgRows  = sheetToNormalisedRows(wb.Sheets[CONFIG.sheet_names.fg]);
+    const rmRows  = sheetToNormalisedRows(wb.Sheets[CONFIG.sheet_names.rm]);
+    const prodFg  = sheetToNormalisedRows(wb.Sheets[CONFIG.sheet_names.prod_fg]);
+    const prodRm  = sheetToNormalisedRows(wb.Sheets[CONFIG.sheet_names.prod_rm]);
+    _allData = {fgRows, rmRows, prodFg, prodRm};
+
+    // Build available dates from ALL rows
+    _availableDates = buildAvailableDates([...fgRows,...rmRows,...prodFg,...prodRm]);
+
+    // Set date input bounds from available dates
+    const allDates = _availableDates;
+    if (allDates.length > 0) {
+        const minYMD = allDates[0];
+        const maxYMD = allDates[allDates.length-1];
+        document.getElementById('dateFromInput').min = minYMD;
+        document.getElementById('dateFromInput').max = maxYMD;
+        document.getElementById('dateToInput').min = minYMD;
+        document.getElementById('dateToInput').max = maxYMD;
+        // Default: full range
+        document.getElementById('dateFromInput').value = minYMD;
+        document.getElementById('dateToInput').value = maxYMD;
+    } else {
+        document.getElementById('dateFromInput').value = '';
+        document.getElementById('dateToInput').value = '';
+    }
+
+    updateDateRangeInfo();
+    renderDateChips();
+
+    // Reset filters
+    _filterState = {line:'ALL', period:'ALL', shift:'ALL', dateFrom:null, dateTo:null};
+    document.getElementById('filterLine').value='ALL';
+    document.getElementById('filterPeriod').value='ALL';
+    document.getElementById('filterShift').value='ALL';
+    document.getElementById('dataBadge').classList.remove('filtered');
+    document.querySelectorAll('.period-pill').forEach(p=>p.classList.toggle('active',p.dataset.period==='ALL'));
+    document.getElementById('dateRangePanel').style.display='none';
+
+    renderAll();
+
+    const now = new Date();
+    document.getElementById('headerSub').textContent =
+        `Generated ${now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}  ·  ${fileName}`;
+    document.getElementById('footerFile').textContent = fileName;
+
+    document.getElementById('uploadScreen').style.display='none';
+    document.getElementById('dashScreen').style.display='block';
+    document.getElementById('loadingOverlay').classList.remove('active');
+
+    document.querySelectorAll('.card').forEach((card,i)=>{
+        card.style.animation='none'; card.offsetHeight;
+        card.style.animation=`cardFadeUp 0.45s ease ${i*0.03}s forwards`;
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// PDF DOWNLOAD
+// ═══════════════════════════════════════════════════
+function downloadPDF() {
+    if (!_rawWb||!_allData) { alert('No data loaded yet.'); return; }
+    const btn=document.getElementById('downloadBtn');
+    btn.textContent='⏳ GENERATING…'; btn.disabled=true;
+
+    const chartIds=['chartTSDPL','chartCPDY','chartProd','chartWoQh','chartRM','chartFGSplit','chartFGRadar','chartQRisk','chartProdTrend','chartRMAge'];
+    const chartSnapshots={};
+    for (const id of chartIds) {
+        const canvas=document.getElementById(id);
+        if(canvas){try{chartSnapshots[id]=canvas.toDataURL('image/png');}catch(e){}}
+    }
+    function tableHTML(id){const el=document.getElementById(id);return el?el.outerHTML:'';}
+    function kpiVal(id){const el=document.getElementById(id);return el?el.textContent:'—';}
+
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    const fileName=_fileName||'SAP Export';
+
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kalinganagar Plant One-Pager — ${dateStr}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a2e;font-size:11px}.page{width:100%;padding:14px 18px}.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0284c7;padding-bottom:8px;margin-bottom:14px}.header-title{font-size:20px;font-weight:700;color:#0284c7;letter-spacing:1px}.header-sub{font-size:11px;color:#555;margin-top:3px}.header-date{font-size:11px;color:#555;text-align:right}.kpi-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}.kpi-card{border:1px solid #d0e4f0;border-radius:6px;padding:8px 10px;background:#f0f8ff;text-align:center}.kpi-label{font-size:9px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}.kpi-value{font-size:17px;font-weight:700;color:#0284c7;line-height:1}.kpi-unit{font-size:8px;color:#777;margin-top:2px}.section-title{font-size:10px;font-weight:700;color:#0284c7;text-transform:uppercase;letter-spacing:1.5px;border-left:3px solid #0284c7;padding-left:7px;margin:12px 0 7px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}.card{border:1px solid #d0e4f0;border-radius:6px;overflow:hidden}.card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;padding:7px 10px;background:#f0f8ff;border-bottom:1px solid #d0e4f0}.card-body{padding:8px}table{width:100%;border-collapse:collapse;font-size:10px}th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;text-align:right;padding:5px 6px;border-bottom:1px solid #ccc;background:#f7fafc}th:first-child{text-align:left}td{padding:4px 6px;border-bottom:1px solid #eee;text-align:right;color:#333}td:first-child{text-align:left;font-weight:600}tfoot td{font-weight:700;color:#0284c7;border-top:1px solid #999;border-bottom:none;background:#f0f8ff}.chart-img{width:100%;height:auto;display:block}.footer{border-top:1px solid #ccc;margin-top:14px;padding-top:8px;font-size:9px;color:#888;display:flex;justify-content:space-between}@media print{@page{size:A3 landscape;margin:10mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><div class="header-title">KALINGANAGAR PLANT — ONE-PAGER REPORT</div><div class="header-sub">${fileName}</div></div><div class="header-date">Generated: ${dateStr}<br>${now.toLocaleTimeString('en-IN')}</div></div><div class="kpi-strip"><div class="kpi-card"><div class="kpi-label">Total FG</div><div class="kpi-value">${kpiVal('kpi-fg-total')}</div><div class="kpi-unit">MT (TSDPL+CPDY)</div></div><div class="kpi-card"><div class="kpi-label">Total RM</div><div class="kpi-value">${kpiVal('kpi-rm-total')}</div><div class="kpi-unit">MT in-stock</div></div><div class="kpi-card"><div class="kpi-label">Today's Prod.</div><div class="kpi-value">${kpiVal('kpi-prod-today')}</div><div class="kpi-unit">MT on-date</div></div><div class="kpi-card"><div class="kpi-label">Month-to-Date</div><div class="kpi-value">${kpiVal('kpi-prod-mtd')}</div><div class="kpi-unit">MT to-date</div></div><div class="kpi-card"><div class="kpi-label">Quality Hold</div><div class="kpi-value" style="color:#dc2626">${kpiVal('kpi-qhold')}</div><div class="kpi-unit">MT held</div></div><div class="kpi-card"><div class="kpi-label">Without Order</div><div class="kpi-value" style="color:#d97706">${kpiVal('kpi-wo')}</div><div class="kpi-unit">MT unallocated</div></div><div class="kpi-card"><div class="kpi-label">RM In-Transit</div><div class="kpi-value">${kpiVal('kpi-rm-transit')}</div><div class="kpi-unit">MT incoming</div></div></div><div class="section-title">Production Report</div><div class="grid-2"><div class="card"><div class="card-title">On-Date Actual (MT)</div><div class="card-body">${tableHTML('prodOnDateBody').replace(/<tbody[^>]*>/,'').replace(/<\/tbody>/,'')}</div></div><div class="card"><div class="card-title">To-Date Actual (MT)</div><div class="card-body">${tableHTML('prodToDateBody').replace(/<tbody[^>]*>/,'').replace(/<\/tbody>/,'')}</div></div></div><div class="section-title">FG Inventory — Age Buckets</div><div class="grid-2"><div class="card"><div class="card-title">TSDPL Location</div><div class="card-body" style="overflow-x:auto;">${document.getElementById('tsdplTable')?document.getElementById('tsdplTable').outerHTML:''}</div></div><div class="card"><div class="card-title">CPDY Location</div><div class="card-body" style="overflow-x:auto;">${document.getElementById('cpdyTable')?document.getElementById('cpdyTable').outerHTML:''}</div></div></div><div class="section-title">Visual Analytics</div><div class="grid-3">${chartSnapshots['chartTSDPL']?`<div class="card"><div class="card-title">FG by Age — TSDPL</div><div class="card-body"><img class="chart-img" src="${chartSnapshots['chartTSDPL']}"></div></div>`:''} ${chartSnapshots['chartCPDY']?`<div class="card"><div class="card-title">FG by Age — CPDY</div><div class="card-body"><img class="chart-img" src="${chartSnapshots['chartCPDY']}"></div></div>`:''} ${chartSnapshots['chartProd']?`<div class="card"><div class="card-title">Production</div><div class="card-body"><img class="chart-img" src="${chartSnapshots['chartProd']}"></div></div>`:''}</div><div class="section-title">Without-Order, Quality Hold &amp; RM Status</div><div class="grid-2"><div class="grid-2" style="gap:8px;"><div class="card"><div class="card-title">Without-Order WF</div><div class="card-body">${tableHTML('woBody').replace(/<tbody[^>]*>/,'').replace(/<\/tbody>/,'')}</div></div><div class="card"><div class="card-title">Quality Hold</div><div class="card-body">${tableHTML('qhBody').replace(/<tbody[^>]*>/,'').replace(/<\/tbody>/,'')}</div></div></div><div class="grid-2" style="gap:8px;">${chartSnapshots['chartWoQh']?`<div class="card"><div class="card-title">WO &amp; QH by Line</div><div class="card-body"><img class="chart-img" src="${chartSnapshots['chartWoQh']}"></div></div>`:''} ${chartSnapshots['chartRM']?`<div class="card"><div class="card-title">RM In-Stock vs In-Transit</div><div class="card-body"><img class="chart-img" src="${chartSnapshots['chartRM']}"></div></div>`:''}</div></div><div class="section-title">RM Status by Line</div><div class="card"><div class="card-body" style="overflow-x:auto;"><table><thead><tr><th>Line</th><th>≤3d Count</th><th>≤3d MT</th><th>&gt;3d Count</th><th>&gt;3d MT</th><th>In-Stock Count</th><th>In-Stock MT</th><th>In-Transit MT</th></tr></thead>${tableHTML('rmBody').replace(/<tbody[^>]*>/,'').replace(/<\/tbody>/,'')}${document.getElementById('rmTot')?'<tfoot>'+document.getElementById('rmTot').outerHTML+'</tfoot>':''}</table></div></div><div class="footer"><span>Kalinganagar Plant Analytics · Pure browser</span><span>Generated ${dateStr} · ${fileName}</span></div></div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>`;
+
+    // Open in a new window, auto-print (user selects "Save as PDF" in the dialog).
+    // Using Blob URL avoids any HTML file download — the window is ephemeral.
+    try {
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blobURL = URL.createObjectURL(blob);
+        const printWin = window.open(blobURL, '_blank', 'width=1400,height=900');
+        if (!printWin) {
+            URL.revokeObjectURL(blobURL);
+            throw new Error('popup_blocked');
+        }
+        // Wait for the new window to fully load, then trigger the print dialog.
+        // The print CSS forces "Save as PDF" layout (A3 landscape).
+        printWin.addEventListener('load', () => {
+            setTimeout(() => {
+                printWin.focus();
+                printWin.print();
+                // Revoke the blob URL after a short delay
+                setTimeout(() => URL.revokeObjectURL(blobURL), 2000);
+            }, 250);
+        });
+        // Restore button once print dialog is dismissed
+        printWin.addEventListener('afterprint', () => {
+            btn.textContent = '⬇ DOWNLOAD REPORT'; btn.disabled = false;
+        });
+        // Safety fallback — restore button after 30 s regardless
+        setTimeout(() => { btn.textContent = '⬇ DOWNLOAD REPORT'; btn.disabled = false; }, 30000);
+    } catch(e) {
+        // Fallback: write HTML into new window directly (no blob)
+        const printWin = window.open('', '_blank', 'width=1400,height=900');
+        if (printWin) {
+            printWin.document.open(); printWin.document.write(html); printWin.document.close();
+            setTimeout(() => { printWin.focus(); printWin.print(); }, 400);
+        } else {
+            alert('Pop-ups are blocked. Please allow pop-ups for this page and try again.');
+        }
+        btn.textContent = '⬇ DOWNLOAD REPORT'; btn.disabled = false;
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════
+let _processingLock = false;
+
+function processFile(file) {
+    if (_processingLock||!file) return;
+    _processingLock = true;
+    if (!file.name.match(/\.xlsx?$/i)) { showError('Please upload an .xlsx or .xls file.'); _processingLock=false; return; }
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('uploadError').style.display='none';
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data=new Uint8Array(e.target.result);
+            const wb=XLSX.read(data,{type:'array',cellDates:false});
+            destroyAllCharts();
+            renderDashboard(wb, file.name);
+        } catch(err) {
+            document.getElementById('loadingOverlay').classList.remove('active');
+            showError('Could not parse Excel file: '+err.message);
+        } finally {
+            _processingLock=false;
+            document.getElementById('fileInput').value='';
+        }
+    };
+    reader.onerror = () => {
+        document.getElementById('loadingOverlay').classList.remove('active');
+        showError('Error reading file. Please try again.');
+        _processingLock=false;
+        document.getElementById('fileInput').value='';
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function showError(msg) {
+    const el=document.getElementById('uploadError'); el.style.display='block'; el.textContent=msg;
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+function resetToDrop() {
+    _rawWb=null; _allData=null; _fileName=''; _processingLock=false; _availableDates=[];
+    destroyAllCharts();
+    document.getElementById('fileInput').value='';
+    document.getElementById('uploadError').style.display='none';
+    document.getElementById('dashScreen').style.display='none';
+    document.getElementById('uploadScreen').style.display='';
+    _filterState={line:'ALL',period:'ALL',shift:'ALL',dateFrom:null,dateTo:null};
+    document.getElementById('filterLine').value='ALL';
+    document.getElementById('filterPeriod').value='ALL';
+    document.getElementById('filterShift').value='ALL';
+    document.getElementById('dateRangePanel').style.display='none';
+    document.getElementById('dataBadge').classList.remove('filtered');
+    document.querySelectorAll('.line-tab').forEach(t=>t.classList.toggle('active',t.dataset.line==='ALL'));
+    document.querySelectorAll('.period-pill').forEach(p=>p.classList.toggle('active',p.dataset.period==='ALL'));
+}
+
+// ═══════════════════════════════════════════════════
+// EVENT LISTENERS
+// ═══════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', e=>{
+    if(e.target.files&&e.target.files.length>0) processFile(e.target.files[0]);
+});
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('dragover');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e=>{
+    e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover');
+    if(e.dataTransfer.files&&e.dataTransfer.files.length>0){
+        const input=document.getElementById('fileInput');
+        const dt=new DataTransfer(); dt.items.add(e.dataTransfer.files[0]);
+        input.files=dt.files; input.dispatchEvent(new Event('change'));
+    }
+});
+dropZone.addEventListener('click', e=>{
+    if(e.target===dropZone||e.target.classList.contains('drop-icon')||e.target.classList.contains('drop-label')||e.target.classList.contains('drop-hint'))
+        document.getElementById('fileInput').click();
+});
+document.getElementById('btnChooseFile').addEventListener('click', e=>{e.stopPropagation();document.getElementById('fileInput').click();});
+document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
+
+// Line tabs
+document.querySelectorAll('.line-tab').forEach(tab=>{
+    tab.addEventListener('click', function(){
+        document.querySelectorAll('.line-tab').forEach(t=>t.classList.remove('active'));
+        this.classList.add('active');
+        _filterState.line=this.dataset.line;
+        document.getElementById('filterLine').value=this.dataset.line;
+        renderAll();
+    });
+});
+
+// Line select
+document.getElementById('filterLine').addEventListener('change', function(){
+    _filterState.line=this.value;
+    document.querySelectorAll('.line-tab').forEach(t=>t.classList.toggle('active',t.dataset.line===this.value));
+    renderAll();
+});
+
+// Period pills
+document.querySelectorAll('.period-pill').forEach(pill=>{
+    pill.addEventListener('click', function(){
+        const period=this.dataset.period;
+        document.querySelectorAll('.period-pill').forEach(p=>p.classList.remove('active'));
+        this.classList.add('active');
+        _filterState.period=period;
+        document.getElementById('filterPeriod').value=period;
+        const panel=document.getElementById('dateRangePanel');
+        if (period==='CUSTOM') {
+            panel.style.display='';
+            // Apply current date range values
+            const fromVal=document.getElementById('dateFromInput').value;
+            const toVal=document.getElementById('dateToInput').value;
+            _filterState.dateFrom = fromVal ? ymdToDate(fromVal) : null;
+            _filterState.dateTo   = toVal   ? ymdToDate(toVal)   : null;
+            renderDateChips();
+        } else {
+            panel.style.display='none';
+            _filterState.dateFrom=null;
+            _filterState.dateTo=null;
+        }
+        renderAll();
+    });
+});
+
+// Shift filter
+document.getElementById('filterShift').addEventListener('change', function(){
+    _filterState.shift=this.value; renderAll();
+});
+
+// Date inputs — update chips highlighting on change but DON'T auto-apply (wait for APPLY btn)
+document.getElementById('dateFromInput').addEventListener('change', function(){
+    // Ensure dateTo.min is always >= dateFrom
+    document.getElementById('dateToInput').min = this.value;
+    if (document.getElementById('dateToInput').value && document.getElementById('dateToInput').value < this.value) {
+        document.getElementById('dateToInput').value = this.value;
+    }
+    renderDateChips();
+});
+document.getElementById('dateToInput').addEventListener('change', function(){
+    renderDateChips();
+});
+
+// Apply range button
+document.getElementById('btnApplyRange').addEventListener('click', function(){
+    const fromVal=document.getElementById('dateFromInput').value;
+    const toVal=document.getElementById('dateToInput').value;
+    if (!fromVal) { alert('Please select a From date.'); return; }
+    const effectiveTo = toVal || fromVal; // if no TO, treat as single day
+    if (!toVal) document.getElementById('dateToInput').value = effectiveTo;
+    _filterState.dateFrom = ymdToDate(fromVal);
+    _filterState.dateTo   = ymdToDate(effectiveTo);
+    _filterState.period   = 'CUSTOM';
+    renderDateChips();
+    renderAll();
+    // Visual feedback
+    this.textContent='✓ APPLIED';
+    setTimeout(()=>{this.textContent='APPLY';},1200);
+});
+
+// Reset filters
+document.getElementById('btnResetFilters').addEventListener('click', function(){
+    _filterState={line:'ALL',period:'ALL',shift:'ALL',dateFrom:null,dateTo:null};
+    document.getElementById('filterLine').value='ALL';
+    document.getElementById('filterPeriod').value='ALL';
+    document.getElementById('filterShift').value='ALL';
+    document.getElementById('dateRangePanel').style.display='none';
+    document.getElementById('dataBadge').classList.remove('filtered');
+    document.querySelectorAll('.line-tab').forEach(t=>t.classList.toggle('active',t.dataset.line==='ALL'));
+    document.querySelectorAll('.period-pill').forEach(p=>p.classList.toggle('active',p.dataset.period==='ALL'));
+    renderAll();
+});
+</script>
+</body>
+</html>
