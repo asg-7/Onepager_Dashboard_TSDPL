@@ -474,6 +474,37 @@
         .loading-text { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 1px; }
         .no-data-msg { text-align: center; padding: 24px; color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: 1px; }
 
+        /* ── TRENDS ANALYSIS ── */
+        .trend-tab {
+            font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+            text-transform: uppercase; padding: 6px 14px; border-radius: var(--radius);
+            border: 1px solid var(--border); background: transparent; color: var(--muted);
+            cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+        }
+        .trend-tab:hover { border-color: var(--accent3); color: var(--accent3); background: rgba(52,211,153,0.05); }
+        .trend-tab.active { background: rgba(52,211,153,0.12); border-color: var(--accent3); color: var(--accent3); }
+        .trend-panel { display: none; }
+        .trend-panel.active { display: block; }
+        .trend-tag { background: rgba(52,211,153,0.1) !important; border-color: rgba(52,211,153,0.2) !important; color: var(--accent3) !important; }
+        .trend-insight {
+            margin: 0 16px 14px;
+            padding: 10px 14px;
+            background: rgba(56,189,248,0.04);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            font-size: 12px; color: var(--muted); line-height: 1.6;
+            display: none;
+        }
+        .trend-insight.visible { display: block; }
+        .trend-insight strong { color: var(--accent2); }
+        .trend-insight .good { color: var(--accent3); font-weight: 700; }
+        .trend-insight .warn { color: #fbbf24; font-weight: 700; }
+        .trend-insight .bad  { color: var(--accent4); font-weight: 700; }
+        .gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .gauge-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+        .gauge-pct   { font-family: var(--mono); font-size: 22px; font-weight: 700; }
+        .gauge-sub   { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -605,8 +636,8 @@
 
     <div class="drop-zone" id="dropZone">
         <span class="drop-icon">📊</span>
-        <div class="drop-label">Drop your Excel file here</div>
-        <div class="drop-hint">.xlsx files only · SAP export format</div>
+        <div class="drop-label">Drop your SAP Excel file here</div>
+        <div class="drop-hint">.xlsx files only · RM &amp; FG sheets in one file</div>
         <input type="file" id="fileInput" accept=".xlsx,.xls">
         <button class="btn-upload" id="btnChooseFile">Choose File</button>
     </div>
@@ -617,11 +648,13 @@
         <h3>Expected Sheet Names</h3>
         <ul class="sheet-list">
             <li><code>RM</code> Raw Materials inventory</li>
-            <li><code>FG</code> Finished Goods inventory</li>
             <li><code>Production Report(RM)</code> RM production rows</li>
+            <li><code>FG</code> Finished Goods inventory</li>
             <li><code>Production Report(FG)</code> FG production rows</li>
         </ul>
-        <p style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;">If these sheets are not found, the dashboard will try to read from a single <code>One Pager Report</code> sheet as fallback.</p>
+        <p style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;">
+            All four sheets in one file — with or without Quality Hold data. Monthly ABP targets are entered via the <strong>📋 PLANNING</strong> button after loading.
+        </p>
     </div>
 </div>
 
@@ -1029,6 +1062,117 @@
         </div>
     </div>
 
+    <!-- TRENDS ANALYSIS SECTION -->
+    <div class="section-label" style="padding-top:28px;">📈 Trends Analysis</div>
+    <div style="padding:8px 28px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;">ANALYSIS TYPE:</span>
+        <button class="trend-tab active" data-trend="production">Production Output</button>
+        <button class="trend-tab" data-trend="efficiency">Shift Efficiency</button>
+        <button class="trend-tab" data-trend="cumulative">Cumulative vs Target</button>
+        <button class="trend-tab" data-trend="inventory">Inventory Health</button>
+        <button class="trend-tab" data-trend="quality">Quality & Hold Trends</button>
+    </div>
+
+    <!-- Production Output Trend -->
+    <div class="trend-panel active" id="trendPanel-production" style="padding:12px 28px 0;">
+        <div class="grid-2" style="padding:0;margin-bottom:12px;">
+            <div class="card">
+                <div class="card-header"><div class="card-title">Daily Production Output — RM (MT)</div><div class="card-tag trend-tag">Trend · Per Line</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartDailyProd"></canvas></div></div>
+                <div class="trend-insight" id="insightDailyProd"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">7-Day Rolling Average — Production (MT)</div><div class="card-tag trend-tag">Smoothed</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartRolling"></canvas></div></div>
+                <div class="trend-insight" id="insightRolling"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header"><div class="card-title">Production Rate Heatmap — Output per Day by Line</div><div class="card-tag trend-tag">Comparative</div></div>
+            <div class="card-body" style="padding:12px 16px;overflow-x:auto;"><div id="trendHeatmap" style="min-width:500px;"></div></div>
+            <div class="trend-insight" id="insightHeatmap"></div>
+        </div>
+    </div>
+
+    <!-- Shift Efficiency -->
+    <div class="trend-panel" id="trendPanel-efficiency" style="padding:12px 28px 0;">
+        <div class="grid-2" style="padding:0;margin-bottom:12px;">
+            <div class="card">
+                <div class="card-header"><div class="card-title">Production by Shift — MT per Shift</div><div class="card-tag trend-tag">Shift Split</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartShift"></canvas></div></div>
+                <div class="trend-insight" id="insightShift"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">Shift Contribution % — by Line</div><div class="card-tag trend-tag">Stacked %</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartShiftPct"></canvas></div></div>
+                <div class="trend-insight" id="insightShiftPct"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cumulative vs Target -->
+    <div class="trend-panel" id="trendPanel-cumulative" style="padding:12px 28px 0;">
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-header"><div class="card-title">Cumulative Production vs Monthly Target — RM (MT)</div><div class="card-tag trend-tag">Cumulative</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:300px;"><canvas id="trendChartCumulative"></canvas></div></div>
+            <div class="trend-insight" id="insightCumulative"></div>
+        </div>
+        <div class="grid-2" style="padding:0;margin-bottom:16px;">
+            <div class="card">
+                <div class="card-header"><div class="card-title">% Achievement vs Target — by Line</div><div class="card-tag trend-tag">Gauge</div></div>
+                <div class="card-body"><div id="trendGauges" style="display:flex;gap:16px;justify-content:space-around;padding:12px 0;flex-wrap:wrap;"></div></div>
+                <div class="trend-insight" id="insightGauges"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">Asking Rate vs Actual Rate — MT/day</div><div class="card-tag trend-tag">Gap Analysis</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:220px;"><canvas id="trendChartRate"></canvas></div></div>
+                <div class="trend-insight" id="insightRate"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Health -->
+    <div class="trend-panel" id="trendPanel-inventory" style="padding:12px 28px 0;">
+        <div class="grid-2" style="padding:0;margin-bottom:12px;">
+            <div class="card">
+                <div class="card-header"><div class="card-title">FG Inventory Age Profile — All Locations</div><div class="card-tag trend-tag">Age Risk</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartFGAge"></canvas></div></div>
+                <div class="trend-insight" id="insightFGAge"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">RM Age Coverage — ≤3 Days vs &gt;3 Days (MT)</div><div class="card-tag trend-tag">RM Risk</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartRMCoverage"></canvas></div></div>
+                <div class="trend-insight" id="insightRMCoverage"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header"><div class="card-title">Inventory Snapshot — Stock Summary by Line</div><div class="card-tag trend-tag">Overview</div></div>
+            <div class="card-body" style="padding:0;overflow-x:auto;">
+                <table class="dash-table" id="trendInventoryTable">
+                    <thead><tr><th>Line</th><th>FG TSDPL (MT)</th><th>FG CPDY (MT)</th><th>FG Total (MT)</th><th>RM ≤3d (MT)</th><th>RM &gt;3d (MT)</th><th>RM In-Transit (MT)</th><th>Risk Flag</th></tr></thead>
+                    <tbody id="trendInventoryBody"></tbody>
+                </table>
+            </div>
+            <div class="trend-insight" id="insightInventory"></div>
+        </div>
+    </div>
+
+    <!-- Quality & Hold -->
+    <div class="trend-panel" id="trendPanel-quality" style="padding:12px 28px 0;">
+        <div class="grid-2" style="padding:0;margin-bottom:12px;">
+            <div class="card">
+                <div class="card-header"><div class="card-title">Quality Hold &amp; Without-Order — MT by Line</div><div class="card-tag trend-tag">Risk</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartQH"></canvas></div></div>
+                <div class="trend-insight" id="insightQH"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">Hold % of Total FG Inventory</div><div class="card-tag trend-tag">% Exposure</div></div>
+                <div class="card-body"><div class="chart-wrap" style="height:260px;"><canvas id="trendChartHoldPct"></canvas></div></div>
+                <div class="trend-insight" id="insightHoldPct"></div>
+            </div>
+        </div>
+    </div>
+
     <footer class="dash-footer">
         <span id="footerFile">—</span>
         <span>Kalinganagar Plant Analytics · Pure browser — no server required</span>
@@ -1378,8 +1522,7 @@ function aggregateFGInventory(fgRows, locSubstr, filterState) {
     const locUpper=locSubstr.toUpperCase();
     for(const row of fgRows){
         if(!applyFGLineFilter(row,filterState))continue;
-        if(!applyShiftFilter(row,filterState))continue;
-        if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
+        // FG/RM inventory is a point-in-time snapshot — date range does NOT filter it out
         const loc=String(row['location']||'').trim().toUpperCase(); if(!loc.includes(locUpper))continue;
         const line=normFGLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
         // README v4: only Prime category counted
@@ -1394,8 +1537,7 @@ function aggregateWithoutOrder(fgRows, filterState) {
     const res=emptyLineMap();
     for(const row of fgRows){
         if(!applyFGLineFilter(row,filterState))continue;
-        if(!applyShiftFilter(row,filterState))continue;
-        if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
+        // Inventory snapshot — not filtered by date range
         const line=normFGLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
         const status=String(row['status']||'').trim().toUpperCase();
         const qh=String(row['quality_hold']||'').trim().toUpperCase();
@@ -1411,8 +1553,7 @@ function aggregateQualityHold(fgRows, filterState) {
     const res=emptyLineMap();
     for(const row of fgRows){
         if(!applyFGLineFilter(row,filterState))continue;
-        if(!applyShiftFilter(row,filterState))continue;
-        if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
+        // Inventory snapshot — not filtered by date range
         const line=normFGLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
         if(String(row['quality_hold']||'').trim().toUpperCase()==='Y')
             res[line]+=safeFloat(row['net_wt'])||safeFloat(row['mass']);
@@ -1425,8 +1566,7 @@ function aggregateRMStatus(rmRows, filterState) {
     const res={}; CONFIG.lines.forEach(l=>res[l]=template());
     for(const row of rmRows){
         if(!applyRMLineFilter(row,filterState))continue;
-        if(!applyShiftFilter(row,filterState))continue;
-        if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
+        // RM inventory is a snapshot — not filtered by date range
         const line=normRMLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
         const wt=safeFloat(row['net_wt'])||safeFloat(row['mass']); const age=safeFloat(row['bundle_age']);
         const place=String(row['place']||'').trim().toLowerCase();
@@ -1779,6 +1919,8 @@ function renderAll() {
     updateCalBtnLabel();
     // Refresh plan panel auto-calc fields in case daysInMonth changed
     updatePlanAutoCalcs();
+    // Refresh trends analysis if a tab is active
+    setTimeout(()=>{ if(typeof renderTrends==='function') renderTrends(); }, 50);
 }
 
 function updateCalBtnLabel() {
@@ -2127,6 +2269,482 @@ planDropZone.addEventListener('drop',e=>{
         const dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);input.files=dt.files;input.dispatchEvent(new Event('change'));
     }
 });
+
+// ═══════════════════════════════════════════════════
+// TRENDS ANALYSIS
+// ═══════════════════════════════════════════════════
+
+// Trend tab switching
+document.querySelectorAll('.trend-tab').forEach(btn=>{
+    btn.addEventListener('click',function(){
+        document.querySelectorAll('.trend-tab').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.trend-panel').forEach(p=>p.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('trendPanel-'+this.dataset.trend).classList.add('active');
+        if(_allData) renderTrends();
+    });
+});
+
+function showInsight(id, html) {
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=html; el.classList.add('visible');
+}
+
+// ── Rolling average helper ──
+function rollingAvg(arr, window=7) {
+    return arr.map((_,i)=>{
+        const slice=arr.slice(Math.max(0,i-window+1),i+1);
+        return Math.round((slice.reduce((a,b)=>a+b,0)/slice.length)*10)/10;
+    });
+}
+
+// ── Trend direction helper ──
+function trendDir(arr) {
+    if(arr.length<3) return 'stable';
+    const half=Math.floor(arr.length/2);
+    const first=arr.slice(0,half).reduce((a,b)=>a+b,0)/half;
+    const last=arr.slice(half).reduce((a,b)=>a+b,0)/arr.slice(half).length;
+    const pct=((last-first)/Math.max(first,1))*100;
+    if(pct>5) return 'up';
+    if(pct<-5) return 'down';
+    return 'stable';
+}
+
+function trendArrow(dir) {
+    if(dir==='up') return '<span class="good">↑ improving</span>';
+    if(dir==='down') return '<span class="bad">↓ declining</span>';
+    return '<span class="warn">→ stable</span>';
+}
+
+function renderTrends() {
+    if(!_allData) return;
+    const { fgRows, rmRows, prodFg, prodRm } = _allData;
+    const fs = { ..._filterState };
+    const visLines = getFilteredLines();
+    const lineColors = [CHART_COLORS.light, CHART_COLORS.green, CHART_COLORS.purple, CHART_COLORS.orange];
+
+    // Re-use existing daily prod aggregation
+    const daily = aggregateProdByDate(prodRm, fs);
+
+    const activeTab = document.querySelector('.trend-tab.active')?.dataset?.trend || 'production';
+
+    // ── PRODUCTION OUTPUT PANEL ──────────────────────
+    if(activeTab==='production') {
+        // Daily prod (same as main chart but in trends context)
+        const datasets1=[];
+        daily.visLines.forEach((l,i)=>datasets1.push({
+            label:l, data:daily.byLine[l],
+            borderColor:lineColors[i%lineColors.length],
+            backgroundColor:lineColors[i%lineColors.length].replace('0.85','0.08'),
+            tension:0.35, fill:false, pointRadius:2, borderWidth:2, pointHoverRadius:5
+        }));
+        if(daily.visLines.length>1) datasets1.push({
+            label:'Total', data:daily.total,
+            borderColor:'rgba(255,255,255,0.5)', backgroundColor:'transparent',
+            tension:0.35, fill:false, pointRadius:2, borderWidth:2, borderDash:[4,3]
+        });
+        makeChart('trendChartDailyProd',{type:'line',data:{labels:daily.labels,datasets:datasets1},
+            options:trendLineOpts('MT/day')});
+
+        const dir=trendDir(daily.total);
+        const maxDay=daily.dates.length>0?Math.max(...daily.total):0;
+        const avgProd=daily.total.length>0?Math.round(daily.total.reduce((a,b)=>a+b,0)/daily.total.length*10)/10:0;
+        showInsight('insightDailyProd',
+            `📊 Avg daily output: <strong>${avgProd} MT/day</strong> across <strong>${daily.dates.length} days</strong>. ` +
+            `Peak day: <strong>${maxDay} MT</strong>. Overall trend: ${trendArrow(dir)}.`
+        );
+
+        // 7-day rolling average
+        const datasets2=[];
+        daily.visLines.forEach((l,i)=>{
+            const rolled=rollingAvg(daily.byLine[l]);
+            datasets2.push({
+                label:`${l} (7d avg)`, data:rolled,
+                borderColor:lineColors[i%lineColors.length],
+                backgroundColor:'transparent', tension:0.5, fill:false, pointRadius:0, borderWidth:2.5
+            });
+        });
+        if(daily.visLines.length>1) datasets2.push({
+            label:'Total (7d avg)', data:rollingAvg(daily.total),
+            borderColor:'rgba(255,255,255,0.6)', backgroundColor:'transparent',
+            tension:0.5, fill:false, pointRadius:0, borderWidth:2, borderDash:[5,3]
+        });
+        makeChart('trendChartRolling',{type:'line',data:{labels:daily.labels,datasets:datasets2},
+            options:trendLineOpts('MT/day (smoothed)')});
+
+        const rollTotal=rollingAvg(daily.total);
+        const rollDir=trendDir(rollTotal);
+        showInsight('insightRolling',
+            `🔵 7-day rolling average smooths day-to-day variation. The smoothed trend is ${trendArrow(rollDir)}. ` +
+            `Latest 7d avg: <strong>${rollTotal.length>0?rollTotal[rollTotal.length-1]:0} MT/day</strong>.`
+        );
+
+        // Heatmap (HTML table based)
+        renderHeatmap(daily);
+        const bestLine=visLines.length>0?visLines.reduce((a,b)=>
+            (daily.byLine[a]||[]).reduce((s,v)=>s+v,0)>=(daily.byLine[b]||[]).reduce((s,v)=>s+v,0)?a:b
+        ):'-';
+        showInsight('insightHeatmap',
+            `🗓 Each cell shows daily output for a line. Darker = higher output. ` +
+            `Best performing line in period: <strong>${bestLine}</strong>.`
+        );
+    }
+
+    // ── SHIFT EFFICIENCY PANEL ───────────────────────
+    if(activeTab==='efficiency') {
+        const shiftLabels=['A (Morning)','B (Afternoon)','C (Night)'];
+        const shiftKeys=['A','B','C'];
+        const shiftData={}; // shiftData[line][shift] = total MT
+        visLines.forEach(l=>{shiftData[l]={A:0,B:0,C:0};});
+        for(const row of prodRm){
+            if(!applyRMLineFilter(row,fs))continue;
+            const inRange=fs.period!=='CUSTOM'||isInRange(row['date_creation'],fs.dateFrom,fs.dateTo);
+            if(!inRange)continue;
+            const line=normRMLine(row['proc_line']); if(!visLines.includes(line))continue;
+            const shift=String(row['shift']||'').trim().toUpperCase();
+            if(!shiftKeys.includes(shift))continue;
+            shiftData[line][shift]+=rowProdWt(row);
+        }
+        const shiftColors={A:CHART_COLORS.sky, B:CHART_COLORS.green, C:CHART_COLORS.purple};
+        const shiftDs=shiftKeys.map((s,i)=>({
+            label:shiftLabels[i],
+            data:visLines.map(l=>Math.round(shiftData[l][s]*10)/10),
+            backgroundColor:Object.values(shiftColors)[i], borderWidth:0
+        }));
+        makeChart('trendChartShift',{type:'bar',data:{labels:visLines,datasets:shiftDs},
+            options:{...CHART_DEFAULTS,plugins:{...CHART_DEFAULTS.plugins,legend:{labels:{color:'#94a3b8',font:{size:11},boxWidth:12}}}}});
+
+        // Find best shift overall
+        const shiftTotals={A:0,B:0,C:0};
+        visLines.forEach(l=>shiftKeys.forEach(s=>shiftTotals[s]+=shiftData[l][s]));
+        const bestShift=shiftKeys.reduce((a,b)=>shiftTotals[a]>=shiftTotals[b]?a:b,'A');
+        const bestShiftLabel={'A':'Morning (A)','B':'Afternoon (B)','C':'Night (C)'}[bestShift];
+        showInsight('insightShift',
+            `⏱ Highest-output shift: <strong>${bestShiftLabel}</strong> with <strong>${fmt(shiftTotals[bestShift])} MT</strong> total. ` +
+            `Compare shifts across lines to spot underperforming windows.`
+        );
+
+        // Stacked % chart
+        const shiftPctDs=shiftKeys.map((s,i)=>({
+            label:shiftLabels[i],
+            data:visLines.map(l=>{
+                const tot=shiftKeys.reduce((a,k)=>a+shiftData[l][k],0);
+                return tot>0?Math.round(shiftData[l][s]/tot*1000)/10:0;
+            }),
+            backgroundColor:Object.values(shiftColors)[i], borderWidth:0
+        }));
+        makeChart('trendChartShiftPct',{type:'bar',data:{labels:visLines,datasets:shiftPctDs},
+            options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,max:100,ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'rgba(30,45,74,0.8)'}}},
+            plugins:{...CHART_DEFAULTS.plugins,datalabels:{...CHART_DEFAULTS.plugins.datalabels,formatter:v=>v>5?v.toFixed(0)+'%':'',anchor:'center',align:'center'}}}});
+        showInsight('insightShiftPct',
+            `📊 Shift contribution % per line. Even distribution (~33% each) suggests balanced operations. ` +
+            `Large skews may indicate shift-specific issues worth investigating.`
+        );
+    }
+
+    // ── CUMULATIVE vs TARGET PANEL ───────────────────
+    if(activeTab==='cumulative') {
+        const latest=_latestProdDate?ymdToDate(_latestProdDate):null;
+        const daysElapsed=latest?latest.getDate():0;
+        const daysInMonth=latest?new Date(latest.getFullYear(),latest.getMonth()+1,0).getDate():30;
+
+        // Build cumulative per line using current month data
+        const monthRows=prodRm.filter(row=>{
+            if(!applyRMLineFilter(row,fs))return false;
+            if(!applyShiftFilter(row,fs))return false;
+            return isCurrentMonth(row['date_creation']);
+        });
+        const dayCumMap={}; // {ymd: {line: mt}}
+        for(const row of monthRows){
+            const d=parseDate(row['date_creation']); if(!d)continue;
+            const ymd=toYMD(d); const line=normRMLine(row['proc_line']); if(!visLines.includes(line))continue;
+            if(!dayCumMap[ymd])dayCumMap[ymd]={};
+            dayCumMap[ymd][line]=(dayCumMap[ymd][line]||0)+rowProdWt(row);
+        }
+        const cumDates=Object.keys(dayCumMap).sort();
+        const cumByLine={}; visLines.forEach(l=>cumByLine[l]=0);
+        const cumDatasets=[];
+        // Running cumulative
+        const cumSeries={}; visLines.forEach(l=>cumSeries[l]=[]);
+        const cumTotalSeries=[];
+        let cumTotal=0;
+        for(const d of cumDates){
+            visLines.forEach(l=>{ cumByLine[l]+=(dayCumMap[d][l]||0); cumSeries[l].push(Math.round(cumByLine[l]*10)/10); });
+            cumTotal+=visLines.reduce((s,l)=>(dayCumMap[d][l]||0)+s,0);
+            cumTotalSeries.push(Math.round(cumTotal*10)/10);
+        }
+        const cumLabels=cumDates.map(ymd=>{const[y,m,day]=ymd.split('-');return`${day}/${m}`;});
+
+        visLines.forEach((l,i)=>{
+            cumDatasets.push({label:l,data:cumSeries[l],borderColor:lineColors[i%lineColors.length],
+                backgroundColor:'transparent',tension:0.35,fill:false,pointRadius:2,borderWidth:2});
+            // Target line per line
+            const tgt=getEffectiveMonthlyTarget(l);
+            if(tgt>0&&daysInMonth>0){
+                const dailyTgt=tgt/daysInMonth;
+                cumDatasets.push({label:`${l} Target`,data:cumDates.map((_,idx)=>Math.round(dailyTgt*(idx+1)*10)/10),
+                    borderColor:lineColors[i%lineColors.length].replace('0.85','0.4'),
+                    backgroundColor:'transparent',borderDash:[5,4],pointRadius:0,borderWidth:1.5,tension:0});
+            }
+        });
+        if(visLines.length>1){
+            cumDatasets.push({label:'Total',data:cumTotalSeries,borderColor:'rgba(255,255,255,0.7)',
+                backgroundColor:'transparent',tension:0.35,fill:false,pointRadius:2,borderWidth:2.5,borderDash:[4,3]});
+            const totalTgt=visLines.reduce((s,l)=>s+getEffectiveMonthlyTarget(l),0);
+            if(totalTgt>0&&daysInMonth>0){
+                const dailyTgt=totalTgt/daysInMonth;
+                cumDatasets.push({label:'Total Target',data:cumDates.map((_,idx)=>Math.round(dailyTgt*(idx+1)*10)/10),
+                    borderColor:'rgba(255,255,255,0.3)',backgroundColor:'transparent',borderDash:[6,4],
+                    pointRadius:0,borderWidth:1.5,tension:0});
+            }
+        }
+        makeChart('trendChartCumulative',{type:'line',data:{labels:cumLabels,datasets:cumDatasets},
+            options:trendLineOpts('MT cumulative')});
+
+        const totalTgt2=visLines.reduce((s,l)=>s+getEffectiveMonthlyTarget(l),0);
+        const expectedByNow=totalTgt2>0&&daysInMonth>0?Math.round(totalTgt2/daysInMonth*daysElapsed*10)/10:0;
+        const gap=Math.round((cumTotal-expectedByNow)*10)/10;
+        const gapStr=gap>=0?`<span class="good">+${gap} MT ahead</span>`:`<span class="bad">${gap} MT behind</span>`;
+        showInsight('insightCumulative',
+            `📈 As of day <strong>${daysElapsed}</strong> of <strong>${daysInMonth}</strong>: ` +
+            `Actual cumulative <strong>${fmt(cumTotal)} MT</strong> vs expected <strong>${fmt(expectedByNow)} MT</strong>. ${gapStr} of pace.`
+        );
+
+        // Gauge rendering
+        const gaugesEl=document.getElementById('trendGauges');
+        gaugesEl.innerHTML='';
+        for(const l of visLines){
+            const tgt=getEffectiveMonthlyTarget(l);
+            const act=cumByLine[l]||0;
+            const pct=tgt>0?Math.round(act/tgt*1000)/10:null;
+            const color=pct===null?'var(--muted)':pct>=100?'var(--accent3)':pct>=80?'#fbbf24':'var(--accent4)';
+            const pctStr=pct!==null?pct.toFixed(1)+'%':'N/A';
+            gaugesEl.innerHTML+=`<div class="gauge-wrap">
+                <canvas id="gaugeCanvas-${l}" width="120" height="120"></canvas>
+                <div class="gauge-label">${l}</div>
+                <div class="gauge-pct" style="color:${color}">${pctStr}</div>
+                <div class="gauge-sub">${fmt(act)} / ${tgt>0?fmt(tgt):'—'} MT</div>
+            </div>`;
+        }
+        // Draw arc gauges
+        requestAnimationFrame(()=>{
+            for(const l of visLines){
+                const tgt=getEffectiveMonthlyTarget(l);
+                const act=cumByLine[l]||0;
+                const pct=tgt>0?Math.min(act/tgt,1.1):0;
+                const canvas=document.getElementById(`gaugeCanvas-${l}`);
+                if(!canvas)continue;
+                const ctx=canvas.getContext('2d');
+                ctx.clearRect(0,0,120,120);
+                // Background arc
+                ctx.beginPath(); ctx.arc(60,60,48,-Math.PI*0.8,Math.PI*0.8);
+                ctx.strokeStyle='rgba(30,45,74,0.9)'; ctx.lineWidth=12; ctx.lineCap='round'; ctx.stroke();
+                // Value arc
+                const endAngle=-Math.PI*0.8+Math.PI*1.6*Math.min(pct,1);
+                const color=pct>=1?'#34d399':pct>=0.8?'#fbbf24':'#f87171';
+                ctx.beginPath(); ctx.arc(60,60,48,-Math.PI*0.8,endAngle);
+                ctx.strokeStyle=color; ctx.lineWidth=12; ctx.lineCap='round'; ctx.stroke();
+            }
+        });
+        const behindLines=visLines.filter(l=>{const t=getEffectiveMonthlyTarget(l);const a=cumByLine[l]||0;return t>0&&a/t<0.8;});
+        showInsight('insightGauges',behindLines.length>0
+            ?`⚠ Lines below 80% of target: <span class="bad">${behindLines.join(', ')}</span>. Consider reviewing shift schedules or maintenance impact.`
+            :`✅ All lines tracking at or above 80% of monthly target. ${gap>=0?'<span class="good">On pace.</span>':'<span class="warn">Monitor asking rate.</span>'}`
+        );
+
+        // Asking rate vs actual rate
+        const rateData=visLines.map(l=>{
+            const tgt=getEffectiveMonthlyTarget(l);
+            const act=cumByLine[l]||0;
+            const actualRate=daysElapsed>0?Math.round(act/daysElapsed*10)/10:0;
+            const remainDays=daysInMonth-daysElapsed;
+            const askingRate=remainDays>0&&tgt>0?Math.round(Math.max(0,(tgt-act)/remainDays)*10)/10:0;
+            return{line:l,actualRate,askingRate};
+        });
+        makeChart('trendChartRate',{type:'bar',
+            data:{labels:visLines,datasets:[
+                {label:'Actual Rate (MT/day)',data:rateData.map(r=>r.actualRate),backgroundColor:CHART_COLORS.green,borderWidth:0},
+                {label:'Asking Rate (MT/day)',data:rateData.map(r=>r.askingRate),backgroundColor:CHART_COLORS.orange,borderWidth:0}
+            ]},options:CHART_DEFAULTS});
+        const overloaded=rateData.filter(r=>r.askingRate>r.actualRate*1.15);
+        showInsight('insightRate',overloaded.length>0
+            ?`⚠ <span class="bad">${overloaded.map(r=>r.line).join(', ')}</span> need to run faster than current actual rate to hit monthly target.`
+            :`✅ Current actual rate is sufficient to achieve monthly targets for all lines at this pace.`
+        );
+    }
+
+    // ── INVENTORY HEALTH PANEL ───────────────────────
+    if(activeTab==='inventory') {
+        const tsdpl=aggregateFGInventory(fgRows,CONFIG.locations.tsdpl,fs);
+        const cpdy=aggregateFGInventory(fgRows,CONFIG.locations.cpdy,fs);
+        const rmSt=aggregateRMStatus(rmRows,fs);
+        const bucks=CONFIG.age_buckets.labels;
+
+        // FG Age stacked bar
+        const fgAgeDs=bucks.map((b,i)=>{
+            const colors=[CHART_COLORS.green,CHART_COLORS.sky,CHART_COLORS.purple,CHART_COLORS.orange,'rgba(251,191,36,0.85)',CHART_COLORS.red];
+            return{label:b,data:visLines.map(l=>Math.round(((tsdpl[l][b]||0)+(cpdy[l][b]||0))*10)/10),
+                backgroundColor:colors[i],borderWidth:0};
+        });
+        makeChart('trendChartFGAge',{type:'bar',data:{labels:visLines,datasets:fgAgeDs},
+            options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}}},
+            plugins:{...CHART_DEFAULTS.plugins,datalabels:{...CHART_DEFAULTS.plugins.datalabels,anchor:'center',align:'center',formatter:v=>v>0?v.toFixed(1):''}}}});
+
+        // Flag aged stock
+        const agedThreshold=90;
+        const agedBucks=bucks.filter((_,i)=>i>=4); // 90-180d and >180d
+        const agedByLine=visLines.map(l=>({line:l,mt:agedBucks.reduce((s,b)=>s+(tsdpl[l][b]||0)+(cpdy[l][b]||0),0)}));
+        const highAged=agedByLine.filter(x=>x.mt>0);
+        showInsight('insightFGAge',highAged.length>0
+            ?`⚠ Aged stock (>90 days): ${highAged.map(x=>`<span class="bad">${x.line}: ${fmt(x.mt)} MT</span>`).join(', ')}. Review dispatch priority.`
+            :`✅ No significant aged FG stock (>90 days). Inventory age profile looks healthy.`
+        );
+
+        // RM Coverage
+        makeChart('trendChartRMCoverage',{type:'bar',
+            data:{labels:visLines,datasets:[
+                {label:'≤3 Days (MT)',data:visLines.map(l=>Math.round(rmSt[l].leq3_mt*10)/10),backgroundColor:CHART_COLORS.green,borderWidth:0},
+                {label:'>3 Days (MT)',data:visLines.map(l=>Math.round(rmSt[l].gt3_mt*10)/10),backgroundColor:CHART_COLORS.orange,borderWidth:0},
+                {label:'In-Transit (MT)',data:visLines.map(l=>Math.round(rmSt[l].transit_mt*10)/10),backgroundColor:CHART_COLORS.sky,borderWidth:0}
+            ]},options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}}},
+            plugins:{...CHART_DEFAULTS.plugins,datalabels:{display:false}}}});
+
+        const lowRM=visLines.filter(l=>rmSt[l].leq3_mt<100&&rmSt[l].transit_mt<100);
+        showInsight('insightRMCoverage',lowRM.length>0
+            ?`⚠ Low near-term RM coverage for: <span class="bad">${lowRM.join(', ')}</span>. ≤3-day stock + in-transit is limited — expedite procurement.`
+            :`✅ Adequate near-term RM coverage across all lines. Monitor >3 day stock for quality degradation.`
+        );
+
+        // Inventory summary table
+        const tbody=document.getElementById('trendInventoryBody'); tbody.innerHTML='';
+        for(const l of visLines){
+            const tsdplTotal=bucks.reduce((s,b)=>s+(tsdpl[l][b]||0),0);
+            const cpdyTotal=bucks.reduce((s,b)=>s+(cpdy[l][b]||0),0);
+            const fgTotal=tsdplTotal+cpdyTotal;
+            const agedMT=agedBucks.reduce((s,b)=>s+(tsdpl[l][b]||0)+(cpdy[l][b]||0),0);
+            const rmRisk=rmSt[l].leq3_mt<50?'<span class="bad">⚠ Low RM</span>':rmSt[l].gt3_mt>rmSt[l].leq3_mt*2?'<span class="warn">↑ Aged RM</span>':'<span class="good">✓ OK</span>';
+            const fgRisk=agedMT>100?`<span class="bad">⚠ ${fmt(agedMT)} MT aged</span>`:'<span class="good">✓ OK</span>';
+            tbody.insertAdjacentHTML('beforeend',`<tr>
+                <td>${l}</td><td>${fmt(tsdplTotal)}</td><td>${fmt(cpdyTotal)}</td><td><strong>${fmt(fgTotal)}</strong></td>
+                <td>${fmt(rmSt[l].leq3_mt)}</td><td>${fmt(rmSt[l].gt3_mt)}</td><td>${fmt(rmSt[l].transit_mt)}</td>
+                <td>${rmRisk} ${fgRisk}</td>
+            </tr>`);
+        }
+        showInsight('insightInventory','📦 Risk flags: <strong class="bad">⚠ Low RM</strong> = ≤3d stock <50 MT, <strong class="bad">Aged FG</strong> = >90d stock present. Green = within normal range.');
+    }
+
+    // ── QUALITY & HOLD PANEL ─────────────────────────
+    if(activeTab==='quality') {
+        const tsdpl=aggregateFGInventory(fgRows,CONFIG.locations.tsdpl,fs);
+        const cpdy=aggregateFGInventory(fgRows,CONFIG.locations.cpdy,fs);
+        const wo=aggregateWithoutOrder(fgRows,fs);
+        const qh=aggregateQualityHold(fgRows,fs);
+        const bucks=CONFIG.age_buckets.labels;
+
+        makeChart('trendChartQH',{type:'bar',data:{labels:visLines,datasets:[
+            {label:'Quality Hold (MT)',data:visLines.map(l=>Math.round(qh[l]*10)/10),backgroundColor:CHART_COLORS.red,borderWidth:0},
+            {label:'Without Order WF (MT)',data:visLines.map(l=>Math.round(wo[l]*10)/10),backgroundColor:CHART_COLORS.orange,borderWidth:0}
+        ]},options:CHART_DEFAULTS});
+
+        const totalQH=visLines.reduce((s,l)=>s+qh[l],0);
+        const totalWO=visLines.reduce((s,l)=>s+wo[l],0);
+        const worstQH=visLines.length>0?visLines.reduce((a,b)=>qh[a]>=qh[b]?a:b,visLines[0]):'-';
+        showInsight('insightQH',
+            `🔴 Total QH: <strong class="bad">${fmt(totalQH)} MT</strong>. Total WO: <strong class="warn">${fmt(totalWO)} MT</strong>. ` +
+            `Highest QH line: <strong>${worstQH}</strong> (${fmt(qh[worstQH])} MT). Prioritise QH disposition to free FG stock.`
+        );
+
+        // Hold % of total FG
+        const holdPctData=visLines.map(l=>{
+            const fgTot=bucks.reduce((s,b)=>s+(tsdpl[l][b]||0)+(cpdy[l][b]||0),0);
+            const held=qh[l]+wo[l];
+            return fgTot>0?Math.round(held/fgTot*1000)/10:0;
+        });
+        const availPctData=holdPctData.map(p=>Math.max(0,Math.round((100-p)*10)/10));
+        makeChart('trendChartHoldPct',{type:'bar',data:{labels:visLines,datasets:[
+            {label:'Available %',data:availPctData,backgroundColor:CHART_COLORS.green,borderWidth:0},
+            {label:'Hold % (QH+WO)',data:holdPctData,backgroundColor:CHART_COLORS.red,borderWidth:0}
+        ]},options:{...CHART_DEFAULTS,scales:{x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'rgba(30,45,74,0.8)'}},y:{stacked:true,max:100,ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'rgba(30,45,74,0.8)'}}},
+            plugins:{...CHART_DEFAULTS.plugins,datalabels:{...CHART_DEFAULTS.plugins.datalabels,formatter:v=>v>3?v.toFixed(1)+'%':'',anchor:'center',align:'center'}}}});
+
+        const maxHold=visLines.length>0?Math.max(...holdPctData):0;
+        showInsight('insightHoldPct',
+            maxHold>20
+            ?`⚠ <span class="bad">Hold % is high</span> — over 20% of FG inventory is locked (QH or WO). Escalate disposition to free cash flow.`
+            :maxHold>10
+            ?`<span class="warn">Hold % is moderate</span> (~${maxHold.toFixed(1)}%). Monitor weekly — target below 10%.`
+            :`<span class="good">✅ Hold % is within acceptable range</span> (<10%). Continue standard quality monitoring.`
+        );
+    }
+}
+
+// ── Shared line chart options ──
+function trendLineOpts(yLabel='MT') {
+    return {
+        responsive:true, maintainAspectRatio:false, animation:{duration:400},
+        layout:{padding:{top:20,left:8,right:8,bottom:4}},
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+            legend:{labels:{color:'#94a3b8',font:{size:11,family:"'Montserrat',monospace"},boxWidth:12}},
+            datalabels:{display:false},
+            tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${(ctx.parsed.y||0).toLocaleString('en-IN',{minimumFractionDigits:1,maximumFractionDigits:1})} MT`}}
+        },
+        scales:{
+            x:{ticks:{color:'#94a3b8',font:{size:10},maxTicksLimit:16,autoSkip:true},grid:{color:'rgba(30,45,74,0.8)'}},
+            y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(30,45,74,0.8)'},
+               title:{display:true,text:yLabel,color:'#94a3b8',font:{size:10}}}
+        }
+    };
+}
+
+// ── Heatmap renderer ──
+function renderHeatmap(daily) {
+    const container=document.getElementById('trendHeatmap');
+    if(!container)return;
+    const lines=daily.visLines; const dates=daily.dates; const labels=daily.labels;
+    if(!dates.length||!lines.length){container.innerHTML='<div class="no-data-msg">No production data for selected period.</div>';return;}
+    // Find max for colour scaling
+    let maxVal=0;
+    lines.forEach(l=>daily.byLine[l].forEach(v=>{if(v>maxVal)maxVal=v;}));
+    const toColor=(val)=>{
+        if(!val||maxVal===0)return'rgba(22,31,58,0.8)';
+        const pct=val/maxVal;
+        if(pct>0.8)return'rgba(52,211,153,0.85)';
+        if(pct>0.6)return'rgba(56,189,248,0.7)';
+        if(pct>0.4)return'rgba(125,211,252,0.5)';
+        if(pct>0.2)return'rgba(167,139,250,0.4)';
+        return'rgba(248,113,113,0.35)';
+    };
+    // Cap at 31 dates for readability
+    const maxDates=31;
+    const slicedDates=dates.slice(-maxDates); const slicedLabels=labels.slice(-maxDates);
+    let html=`<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">DAILY OUTPUT HEATMAP (MT) — last ${slicedDates.length} days · darker = lower</div>`;
+    html+=`<table style="border-collapse:collapse;width:100%;"><thead><tr><th style="padding:3px 6px;font-family:var(--mono);font-size:9px;color:var(--muted);text-align:left;min-width:60px;">Line</th>`;
+    slicedLabels.forEach(d=>{ html+=`<th style="padding:2px 3px;font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;min-width:32px;">${d}</th>`; });
+    html+=`</tr></thead><tbody>`;
+    lines.forEach(l=>{
+        html+=`<tr><td style="padding:4px 6px;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text);">${l}</td>`;
+        slicedDates.forEach((_,di)=>{
+            const idx=dates.length-slicedDates.length+di;
+            const v=daily.byLine[l][idx]||0;
+            html+=`<td title="${l} · ${dates[idx]||''} · ${v} MT" style="padding:4px 3px;text-align:center;background:${toColor(v)};border-radius:3px;font-family:var(--mono);font-size:9px;color:${v>0?'#f1f5f9':'rgba(148,163,184,0.3)'};">${v>0?v.toFixed(0):'-'}</td>`;
+        });
+        html+=`</tr>`;
+    });
+    html+=`</tbody></table>`;
+    html+=`<div style="display:flex;gap:8px;align-items:center;margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--muted);">
+        <span>Low →</span>
+        <span style="display:inline-block;width:14px;height:10px;background:rgba(248,113,113,0.35);border-radius:2px;"></span>
+        <span style="display:inline-block;width:14px;height:10px;background:rgba(167,139,250,0.4);border-radius:2px;"></span>
+        <span style="display:inline-block;width:14px;height:10px;background:rgba(56,189,248,0.7);border-radius:2px;"></span>
+        <span style="display:inline-block;width:14px;height:10px;background:rgba(52,211,153,0.85);border-radius:2px;"></span>
+        <span>← High</span>
+    </div>`;
+    container.innerHTML=html;
+}
+
+
 </script>
 </body>
 </html>
