@@ -483,11 +483,111 @@
             body { background: white; color: #000; }
             :root { --bg: white; --surface: white; --surface2: #f5f5f5; --border: #ddd; --text: #000; --muted: #555; --accent: #0284c7; --accent2: #38bdf8; }
             .dash-header { position: static; }
-            .btn-reload,.btn-download,.btn-upload,#filterBar,#lineTabs,.btn-reset-filters,#calendarModal { display: none; }
+            .btn-reload,.btn-download,.btn-upload,#filterBar,#lineTabs,.btn-reset-filters,#calendarModal,#planningPanel { display: none; }
             .grid-3,.grid-2,.grid-4 { grid-template-columns: repeat(2,1fr); }
             .kpi-strip { grid-template-columns: repeat(6,1fr); }
             .card { animation: none; break-inside: avoid; }
         }
+
+        /* ── PLANNING BUTTON ── */
+        .btn-plan {
+            padding: 7px 16px; background: transparent;
+            border: 1px solid rgba(167,139,250,0.4);
+            color: rgba(167,139,250,0.9); font-family: var(--mono); font-size: 11px; font-weight: 700;
+            border-radius: var(--radius); cursor: pointer; letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+        .btn-plan:hover, .btn-plan.active { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.8); color: #c4b5fd; }
+
+        /* ── PLANNING PANEL ── */
+        #planningPanel {
+            display: none;
+            background: var(--surface);
+            border-bottom: 2px solid rgba(167,139,250,0.3);
+            animation: filterSlideIn 0.3s ease forwards;
+        }
+        #planningPanel.open { display: block; }
+        .plan-panel-inner { padding: 20px 28px 24px; }
+        .plan-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+        .plan-tab-btn {
+            font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+            padding: 8px 18px 10px; border: none; background: transparent; color: var(--muted);
+            cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+            transition: color 0.2s ease, border-color 0.2s ease;
+        }
+        .plan-tab-btn:hover { color: #c4b5fd; }
+        .plan-tab-btn.active { color: #c4b5fd; border-bottom-color: #c4b5fd; }
+        .plan-tab-content { display: none; }
+        .plan-tab-content.active { display: block; }
+
+        /* Upload sub-panel */
+        .plan-upload-zone {
+            border: 2px dashed rgba(167,139,250,0.35); border-radius: 10px; padding: 28px 24px;
+            text-align: center; cursor: pointer; background: var(--surface2);
+            transition: border-color 0.25s ease, background 0.25s ease;
+            max-width: 480px;
+        }
+        .plan-upload-zone:hover, .plan-upload-zone.dragover { border-color: #c4b5fd; background: rgba(167,139,250,0.07); }
+        .plan-upload-note { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.6; max-width: 480px; }
+        #planUploadStatus { margin-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--accent3); display:none; }
+
+        /* Target inputs grid */
+        .plan-grid {
+            display: grid;
+            grid-template-columns: 140px repeat(3, 1fr);
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 780px;
+        }
+        .plan-grid-header {
+            font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--muted);
+            text-transform: uppercase; padding: 10px 14px; background: var(--surface2);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center;
+        }
+        .plan-grid-header:not(:last-child) { border-right: 1px solid var(--border); }
+        .plan-grid-cell {
+            padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+        }
+        .plan-grid-cell:not(:last-child) { border-right: 1px solid var(--border); }
+        .plan-grid-row-label {
+            font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text);
+        }
+        .plan-input {
+            width: 100%; background: var(--surface); border: 1px solid var(--border);
+            color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 600;
+            padding: 6px 10px; border-radius: 6px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .plan-input:focus { outline: none; border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(167,139,250,0.15); }
+        .plan-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .plan-auto-val {
+            font-family: var(--mono); font-size: 12px; color: var(--muted);
+        }
+        .plan-auto-val.has-val { color: var(--accent3); }
+        .plan-section-title {
+            font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: rgba(167,139,250,0.9);
+            text-transform: uppercase; margin-bottom: 12px;
+        }
+        .plan-row-last .plan-grid-cell { border-bottom: none; }
+        .plan-save-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+        .btn-plan-save {
+            padding: 8px 22px; background: rgba(167,139,250,0.85); border: none; color: #1a0a3a;
+            font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+            border-radius: var(--radius); cursor: pointer; transition: opacity 0.2s ease;
+        }
+        .btn-plan-save:hover { opacity: 0.85; }
+        #planSaveMsg { font-family: var(--mono); font-size: 11px; color: var(--accent3); display: none; }
+
+        /* Maintenance / APU inputs */
+        .maint-grid {
+            display: grid; grid-template-columns: 140px 1fr 1fr 1fr 1fr;
+            gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-width: 860px;
+        }
+        .maint-grid .plan-grid-header, .maint-grid .plan-grid-cell { border-color: var(--border); }
+        .maint-grid .plan-grid-header:not(:last-child), .maint-grid .plan-grid-cell:not(:last-child) { border-right: 1px solid var(--border); }
+        .apu-grid { grid-template-columns: 140px 1fr 1fr 1fr; max-width: 680px; }
     </style>
 </head>
 <body>
@@ -535,6 +635,7 @@
         </div>
         <div class="dash-header-right">
             <div class="data-badge" id="dataBadge">● DATA LOADED</div>
+            <button class="btn-plan" id="btnPlanToggle">📋 PLANNING</button>
             <button class="btn-reload" onclick="resetToDrop()">↺ NEW FILE</button>
             <button class="btn-download" id="downloadBtn">⬇ DOWNLOAD REPORT</button>
         </div>
@@ -571,9 +672,9 @@
         <button class="btn-reset-filters" id="btnResetFilters">↻ RESET FILTERS</button>
     </div>
 
-    <!-- CALENDAR MODAL -->
+    <!-- CALENDAR MODAL — single calendar range selector -->
     <div id="calendarModal">
-        <div class="cal-modal-box">
+        <div class="cal-modal-box" style="max-width:380px;">
             <div class="cal-modal-header">
                 <div class="cal-modal-title">📅 Select Date Range</div>
                 <button class="cal-modal-close" id="btnCloseCalendar">✕</button>
@@ -593,29 +694,16 @@
                 <div class="range-days-count" id="summaryDays" style="display:none"></div>
             </div>
 
-            <!-- Two Calendars Side by Side -->
-            <div class="calendars-wrap">
-                <div>
-                    <div class="cal-section-label">START DATE <span id="fromMonthYear"></span></div>
-                    <div class="inline-cal from-cal" id="calFrom">
-                        <div class="cal-nav">
-                            <button class="cal-nav-btn" id="fromPrev">‹</button>
-                            <div class="cal-month-label" id="fromMonthLabel">—</div>
-                            <button class="cal-nav-btn" id="fromNext">›</button>
-                        </div>
-                        <div class="cal-grid" id="fromGrid"></div>
+            <!-- Single Calendar -->
+            <div style="margin-bottom:16px;">
+                <div class="cal-section-label" id="calPickHint">CLICK START DATE</div>
+                <div class="inline-cal from-cal" id="calSingle" style="border-color:rgba(56,189,248,0.3);">
+                    <div class="cal-nav">
+                        <button class="cal-nav-btn" id="singlePrev">‹</button>
+                        <div class="cal-month-label" id="singleMonthLabel">—</div>
+                        <button class="cal-nav-btn" id="singleNext">›</button>
                     </div>
-                </div>
-                <div>
-                    <div class="cal-section-label">END DATE <span id="toMonthYear"></span></div>
-                    <div class="inline-cal to-cal" id="calTo">
-                        <div class="cal-nav">
-                            <button class="cal-nav-btn" id="toPrev">‹</button>
-                            <div class="cal-month-label" id="toMonthLabel">—</div>
-                            <button class="cal-nav-btn" id="toNext">›</button>
-                        </div>
-                        <div class="cal-grid" id="toGrid"></div>
-                    </div>
+                    <div class="cal-grid" id="singleGrid"></div>
                 </div>
             </div>
 
@@ -636,6 +724,128 @@
         <button class="line-tab" data-line="SLIT">SLIT</button>
     </div>
 
+    <!-- PLANNING PANEL -->
+    <div id="planningPanel">
+        <div class="plan-panel-inner">
+            <div class="plan-tabs">
+                <button class="plan-tab-btn active" data-plan-tab="targets">📊 Machine Targets</button>
+                <button class="plan-tab-btn" data-plan-tab="maintenance">🔧 Maintenance</button>
+                <button class="plan-tab-btn" data-plan-tab="apu">⚡ APU</button>
+                <button class="plan-tab-btn" data-plan-tab="upload">📁 Upload Plan File</button>
+            </div>
+
+            <!-- TARGETS TAB -->
+            <div class="plan-tab-content active" id="planTab-targets">
+                <div class="plan-section-title">Monthly Production Targets (MT) — per Machine/Line</div>
+                <div class="plan-grid" id="planTargetsGrid">
+                    <div class="plan-grid-header">Line</div>
+                    <div class="plan-grid-header">Monthly Target (MT)</div>
+                    <div class="plan-grid-header">Daily Target (MT/day)</div>
+                    <div class="plan-grid-header">On-Date Target (MT)</div>
+                    <!-- WCTL1 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL1</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="target-WCTL1-monthly" placeholder="e.g. 13800" min="0" step="1" data-line="WCTL1"></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="target-WCTL1-daily">—</span></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="target-WCTL1-ondate">—</span></div>
+                    <!-- WCTL2 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL2</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="target-WCTL2-monthly" placeholder="e.g. 16800" min="0" step="1" data-line="WCTL2"></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="target-WCTL2-daily">—</span></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="target-WCTL2-ondate">—</span></div>
+                    <!-- SLIT -->
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-grid-row-label">SLIT</span></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="number" id="target-SLIT-monthly" placeholder="e.g. 12800" min="0" step="1" data-line="SLIT"></div>
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-auto-val" id="target-SLIT-daily">—</span></div>
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-auto-val" id="target-SLIT-ondate">—</span></div>
+                </div>
+                <div class="plan-save-row">
+                    <button class="btn-plan-save" id="btnSaveTargets">✔ Apply Targets to Dashboard</button>
+                    <span id="planSaveMsg">✓ Targets applied — dashboard updated</span>
+                </div>
+            </div>
+
+            <!-- MAINTENANCE TAB -->
+            <div class="plan-tab-content" id="planTab-maintenance">
+                <div class="plan-section-title">Planned Maintenance Data — per Machine/Line</div>
+                <div class="plan-grid maint-grid" id="planMaintGrid">
+                    <div class="plan-grid-header">Line</div>
+                    <div class="plan-grid-header">Planned Downtime (hrs)</div>
+                    <div class="plan-grid-header">Maint. Type</div>
+                    <div class="plan-grid-header">Schedule Date</div>
+                    <div class="plan-grid-header">Remarks</div>
+                    <!-- WCTL1 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL1</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="maint-WCTL1-hrs" placeholder="hrs" min="0" step="0.5"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL1-type" placeholder="PM / BD / OM" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL1-date" placeholder="DD/MM/YYYY" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL1-remarks" placeholder="Notes…" style="font-size:12px;"></div>
+                    <!-- WCTL2 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL2</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="maint-WCTL2-hrs" placeholder="hrs" min="0" step="0.5"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL2-type" placeholder="PM / BD / OM" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL2-date" placeholder="DD/MM/YYYY" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="text" id="maint-WCTL2-remarks" placeholder="Notes…" style="font-size:12px;"></div>
+                    <!-- SLIT -->
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-grid-row-label">SLIT</span></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="number" id="maint-SLIT-hrs" placeholder="hrs" min="0" step="0.5"></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="text" id="maint-SLIT-type" placeholder="PM / BD / OM" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="text" id="maint-SLIT-date" placeholder="DD/MM/YYYY" style="font-size:12px;"></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="text" id="maint-SLIT-remarks" placeholder="Notes…" style="font-size:12px;"></div>
+                </div>
+                <div class="plan-save-row">
+                    <button class="btn-plan-save" id="btnSaveMaint">✔ Save Maintenance Data</button>
+                    <span id="maintSaveMsg" style="font-family:var(--mono);font-size:11px;color:var(--accent3);display:none;">✓ Saved</span>
+                </div>
+            </div>
+
+            <!-- APU TAB -->
+            <div class="plan-tab-content" id="planTab-apu">
+                <div class="plan-section-title">Asset Performance / APU Data — per Machine/Line</div>
+                <div class="plan-grid" style="grid-template-columns:140px repeat(3,1fr);max-width:680px;" id="planApuGrid">
+                    <div class="plan-grid-header">Line</div>
+                    <div class="plan-grid-header">APU Target (%)</div>
+                    <div class="plan-grid-header">APU Actual (%)</div>
+                    <div class="plan-grid-header">Variance (pp)</div>
+                    <!-- WCTL1 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL1</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="apu-WCTL1-target" placeholder="e.g. 85" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="apu-WCTL1-actual" placeholder="e.g. 82" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="apu-WCTL1-var">—</span></div>
+                    <!-- WCTL2 -->
+                    <div class="plan-grid-cell"><span class="plan-grid-row-label">WCTL2</span></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="apu-WCTL2-target" placeholder="e.g. 85" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell"><input class="plan-input" type="number" id="apu-WCTL2-actual" placeholder="e.g. 82" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell"><span class="plan-auto-val" id="apu-WCTL2-var">—</span></div>
+                    <!-- SLIT -->
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-grid-row-label">SLIT</span></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="number" id="apu-SLIT-target" placeholder="e.g. 85" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell plan-row-last"><input class="plan-input" type="number" id="apu-SLIT-actual" placeholder="e.g. 82" min="0" max="100" step="0.1"></div>
+                    <div class="plan-grid-cell plan-row-last"><span class="plan-auto-val" id="apu-SLIT-var">—</span></div>
+                </div>
+                <div class="plan-save-row">
+                    <button class="btn-plan-save" id="btnSaveApu">✔ Save APU Data</button>
+                    <span id="apuSaveMsg" style="font-family:var(--mono);font-size:11px;color:var(--accent3);display:none;">✓ Saved</span>
+                </div>
+            </div>
+
+            <!-- UPLOAD TAB -->
+            <div class="plan-tab-content" id="planTab-upload">
+                <div class="plan-section-title">Upload Separate Planning / ABP File</div>
+                <div class="plan-upload-zone" id="planDropZone">
+                    <span style="font-size:32px;display:block;margin-bottom:12px;">📋</span>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--text);margin-bottom:6px;">Drop your Planning Excel here</div>
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">.xlsx files · ABP / Monthly Plan format</div>
+                    <input type="file" id="planFileInput" accept=".xlsx,.xls" style="display:none;">
+                    <button class="btn-plan-save" onclick="document.getElementById('planFileInput').click()">Choose File</button>
+                </div>
+                <p class="plan-upload-note">
+                    The planning file should contain a sheet named <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);color:#c4b5fd;padding:2px 7px;border-radius:4px;">One Pager Report</code> with line-wise monthly targets in the same layout as the SAP One Pager Report. Targets extracted from this file will override any values entered in the Machine Targets tab.
+                </p>
+                <div id="planUploadStatus">✓ Planning file loaded — targets updated</div>
+            </div>
+        </div>
+    </div>
+
     <!-- KPI STRIP -->
     <div class="kpi-strip" id="kpiStrip">
         <div class="kpi-card accent-yellow">
@@ -649,14 +859,14 @@
             <div class="kpi-unit">MT MTD (RM)</div>
         </div>
         <div class="kpi-card accent-green">
-            <div class="kpi-label">Expected Rate</div>
+            <div class="kpi-label">Expected (Monthly)</div>
             <div class="kpi-rate-wrap">
-                <input type="number" class="kpi-rate-edit" id="kpi-expected-rate" value="" placeholder="—" min="0" step="0.1" title="Auto-calculated from MTD RM ÷ days. Click to override.">
-                <span class="kpi-unit" style="font-size:12px;margin-bottom:2px;">MT/day</span>
+                <input type="number" class="kpi-rate-edit" id="kpi-expected-rate" value="" placeholder="—" min="0" step="1" title="Monthly expected MT from SAP export. Click to override manually.">
+                <span class="kpi-unit" style="font-size:12px;margin-bottom:2px;">MT/month</span>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-                <div class="kpi-unit" id="kpi-rate-source">auto · MTD ÷ days</div>
-                <button class="kpi-rate-reset" id="kpiRateResetBtn" title="Reset to auto-calculated value">↺ auto</button>
+                <div class="kpi-unit" id="kpi-rate-source">from SAP export</div>
+                <button class="kpi-rate-reset" id="kpiRateResetBtn" title="Reset to value from SAP export">↺ auto</button>
             </div>
         </div>
         <div class="kpi-card accent-red">
@@ -676,60 +886,31 @@
         </div>
     </div>
 
-    <!-- RM COVERAGE -->
-    <div class="section-label">RM Coverage</div>
-    <div class="grid-2" style="padding-top:16px; padding-bottom:0;">
-        <div class="card">
-            <div class="card-header"><div class="card-title">RM Coverage — Age Breakdown by Line</div><div class="card-tag">Stacked</div></div>
-            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartRMAge"></canvas></div></div>
-        </div>
-        <div class="card">
-            <div class="card-header"><div class="card-title">RM In-Stock vs In-Transit (MT)</div></div>
-            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartRM"></canvas></div></div>
-        </div>
-    </div>
-
     <!-- PRODUCTION -->
     <div class="section-label">Production Report</div>
-    <div class="grid-2" style="padding-top:16px;">
+    <div style="padding:16px 28px 0;">
         <div class="card">
-            <div class="card-header"><div class="card-title" id="prodOnDateTitle">Last-Day Actual (MT)</div><div class="card-tag">RM</div></div>
-            <div class="card-body" style="padding:0;">
-                <table class="dash-table">
-                    <thead><tr><th>Line</th><th>RM (MT)</th><th>Expected (MT/day)</th><th>vs Expected</th></tr></thead>
+            <div class="card-header"><div class="card-title" id="prodOnDateTitle">Production Summary (MT)</div><div class="card-tag">RM &amp; One Pager</div></div>
+            <div class="card-body" style="padding:0;overflow-x:auto;">
+                <table class="dash-table" style="min-width:720px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Lines</th>
+                            <th>On Date<br><span style="font-weight:400;font-size:9px;">Plan</span></th>
+                            <th>On Date<br><span style="font-weight:400;font-size:9px;">Actual</span></th>
+                            <th>To Date<br><span style="font-weight:400;font-size:9px;">Plan</span></th>
+                            <th>To Date<br><span style="font-weight:400;font-size:9px;">Actual</span></th>
+                            <th>Expected Rate<br><span style="font-weight:400;font-size:9px;">MT/month (ABP)</span></th>
+                            <th>Actual Rate<br><span style="font-weight:400;font-size:9px;">MT/day</span></th>
+                            <th>Asking Rate<br><span style="font-weight:400;font-size:9px;">MT/day</span></th>
+                        </tr>
+                    </thead>
                     <tbody id="prodOnDateBody"></tbody>
-                    <tfoot><tr id="prodOnDateTot"><td>TOTAL</td><td>—</td><td>—</td><td>—</td></tr></tfoot>
-                </table>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><div class="card-title">To-Date Actual (MT)</div><div class="card-tag">RM</div></div>
-            <div class="card-body" style="padding:0;">
-                <table class="dash-table">
-                    <thead><tr><th>Line</th><th>RM (MT)</th><th>Expected (MT)</th><th>vs Expected</th></tr></thead>
-                    <tbody id="prodToDateBody"></tbody>
-                    <tfoot><tr id="prodToDateTot"><td>TOTAL</td><td>—</td><td>—</td><td>—</td></tr></tfoot>
+                    <tfoot><tr id="prodOnDateTot"><td>TOTAL</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tfoot>
                 </table>
             </div>
         </div>
     </div>
-    <div class="grid-2" style="padding-top:0; padding-bottom:0;">
-        <div class="card">
-            <div class="card-header"><div class="card-title">Daily Production — RM (MT) by Date</div><div class="card-tag">Trend</div></div>
-            <div class="card-body"><div class="chart-wrap" style="height:280px;"><canvas id="chartProd"></canvas></div></div>
-        </div>
-        <div class="card">
-            <div class="card-header"><div class="card-title">Quality Hold</div><div class="card-tag">FG</div></div>
-            <div class="card-body" style="padding:0;">
-                <table class="dash-table">
-                    <thead><tr><th>Line</th><th>MT</th></tr></thead>
-                    <tbody id="qhBody"></tbody>
-                    <tfoot><tr id="qhTot"><td>TOTAL</td><td>—</td></tr></tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <!-- FG INVENTORY -->
     <div class="section-label">FG Inventory — Age Buckets</div>
     <div class="grid-2" style="padding-top:16px;">
@@ -755,8 +936,9 @@
         </div>
     </div>
 
-    <!-- WO + QH -->
-    <div class="grid-2">
+    <!-- WO + QH TABLES -->
+    <div class="section-label">Without-Order &amp; Quality Hold</div>
+    <div class="grid-2" style="padding-top:16px;">
         <div class="card">
             <div class="card-header"><div class="card-title">Without-Order WF</div><div class="card-tag">FG</div></div>
             <div class="card-body" style="padding:0;">
@@ -768,8 +950,14 @@
             </div>
         </div>
         <div class="card">
-            <div class="card-header"><div class="card-title">Without-Order &amp; Quality Hold by Line</div><div class="card-tag">Chart</div></div>
-            <div class="card-body"><div class="chart-wrap"><canvas id="chartQHWF"></canvas></div></div>
+            <div class="card-header"><div class="card-title">Quality Hold</div><div class="card-tag">FG</div></div>
+            <div class="card-body" style="padding:0;">
+                <table class="dash-table">
+                    <thead><tr><th>Line</th><th>MT</th></tr></thead>
+                    <tbody id="qhBody"></tbody>
+                    <tfoot><tr id="qhTot"><td>TOTAL</td><td>—</td></tr></tfoot>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -794,8 +982,27 @@
         </div>
     </div>
 
-    <!-- VISUAL ANALYTICS -->
-    <div class="section-label">Visual Analytics</div>
+    <!-- CHARTS (all below tables) -->
+    <div class="section-label" style="padding-top:28px;">RM Coverage Charts</div>
+    <div class="grid-2" style="padding-top:16px; padding-bottom:0;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">RM Coverage — Age Breakdown by Line</div><div class="card-tag">Stacked</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartRMAge"></canvas></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><div class="card-title">RM In-Stock vs In-Transit (MT)</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartRM"></canvas></div></div>
+        </div>
+    </div>
+
+    <div class="section-label">Production &amp; Inventory Charts</div>
+    <div style="padding: 16px 28px 0;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Daily Production — RM (MT) by Date</div><div class="card-tag">Trend</div></div>
+            <div class="card-body"><div class="chart-wrap" style="height:280px;"><canvas id="chartProd"></canvas></div></div>
+        </div>
+    </div>
+
     <div class="grid-3" style="padding-top:16px;">
         <div class="card">
             <div class="card-header"><div class="card-title">FG Split — TSDPL vs CPDY</div><div class="card-tag">Donut</div></div>
@@ -812,6 +1019,10 @@
     </div>
 
     <div class="grid-2" style="padding-top:0;">
+        <div class="card">
+            <div class="card-header"><div class="card-title">Without-Order &amp; Quality Hold by Line</div><div class="card-tag">Chart</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chartQHWF"></canvas></div></div>
+        </div>
         <div class="card">
             <div class="card-header"><div class="card-title">Production Trend — Last Day vs MTD (RM)</div><div class="card-tag">Line</div></div>
             <div class="card-body"><div class="chart-wrap" style="height:240px;"><canvas id="chartProdTrend"></canvas></div></div>
@@ -949,25 +1160,23 @@ function buildAvailableDates(allRows) {
 }
 
 // ═══════════════════════════════════════════════════
-// INLINE CALENDAR STATE
+// INLINE CALENDAR STATE  (single calendar)
 // ═══════════════════════════════════════════════════
 let _calFromYMD = null;  // selected start date
 let _calToYMD   = null;  // selected end date
-let _calFromViewYear  = null;
-let _calFromViewMonth = null;
-let _calToViewYear    = null;
-let _calToViewMonth   = null;
+let _calViewYear  = null;
+let _calViewMonth = null;
+let _calClickState = 'start'; // 'start' | 'end'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_HEADERS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 
-function renderInlineCalendar(gridId, labelId, year, month, isFromCal) {
-    const grid = document.getElementById(gridId);
-    const label = document.getElementById(labelId);
-    label.textContent = `${MONTH_NAMES[month]} ${year}`;
+function renderSingleCalendar() {
+    const grid  = document.getElementById('singleGrid');
+    const label = document.getElementById('singleMonthLabel');
+    label.textContent = `${MONTH_NAMES[_calViewMonth]} ${_calViewYear}`;
     grid.innerHTML = '';
 
-    // Day headers
     DAY_HEADERS.forEach(d => {
         const el = document.createElement('div');
         el.className = 'cal-day-header';
@@ -975,10 +1184,9 @@ function renderInlineCalendar(gridId, labelId, year, month, isFromCal) {
         grid.appendChild(el);
     });
 
-    // First day of month (0=Sun..6=Sat → shift to Mon=0)
-    const firstDay = new Date(year, month, 1).getDay();
+    const firstDay = new Date(_calViewYear, _calViewMonth, 1).getDay();
     const offset = (firstDay === 0) ? 6 : firstDay - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(_calViewYear, _calViewMonth + 1, 0).getDate();
 
     for (let i = 0; i < offset; i++) {
         const el = document.createElement('div');
@@ -987,17 +1195,14 @@ function renderInlineCalendar(gridId, labelId, year, month, isFromCal) {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-        const ymd = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const ymd = `${_calViewYear}-${String(_calViewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const el = document.createElement('div');
         el.textContent = day;
-
         const isAvailable = _availableDateSet.has(ymd);
         if (!isAvailable) {
             el.className = 'cal-day disabled';
         } else {
             el.className = 'cal-day available';
-
-            // Highlight: from, to, in-range
             if (_calFromYMD && _calToYMD) {
                 if (ymd === _calFromYMD && ymd === _calToYMD) el.classList.add('same-day');
                 else if (ymd === _calFromYMD) el.classList.add('selected-from');
@@ -1005,41 +1210,33 @@ function renderInlineCalendar(gridId, labelId, year, month, isFromCal) {
                 else if (ymd > _calFromYMD && ymd < _calToYMD) el.classList.add('in-range');
             } else if (_calFromYMD && ymd === _calFromYMD) {
                 el.classList.add('selected-from');
-            } else if (_calToYMD && ymd === _calToYMD) {
-                el.classList.add('selected-to');
             }
-
-            el.addEventListener('click', () => handleCalDayClick(ymd, isFromCal));
+            el.addEventListener('click', () => handleSingleCalClick(ymd));
         }
         grid.appendChild(el);
     }
 }
 
-function handleCalDayClick(ymd, isFromCal) {
-    if (isFromCal) {
+function handleSingleCalClick(ymd) {
+    if (_calClickState === 'start') {
         _calFromYMD = ymd;
-        // If to is before from, clear to
-        if (_calToYMD && _calToYMD < _calFromYMD) _calToYMD = null;
+        _calToYMD   = null;
+        _calClickState = 'end';
     } else {
-        // To cal
-        if (_calFromYMD && ymd < _calFromYMD) {
-            // Clicked before from — swap
-            _calToYMD = _calFromYMD;
-            _calFromYMD = ymd;
-        } else {
-            _calToYMD = ymd;
-        }
+        if (ymd < _calFromYMD) { _calToYMD = _calFromYMD; _calFromYMD = ymd; }
+        else { _calToYMD = ymd; }
+        _calClickState = 'start';
     }
-    refreshCalendars();
+    renderSingleCalendar();
     updateRangeSummary();
     updateApplyBtn();
     hideCalError();
+    // Update hint
+    const hint = document.getElementById('calPickHint');
+    if (hint) hint.textContent = (_calClickState === 'end') ? 'NOW CLICK END DATE' : 'CLICK START DATE';
 }
 
-function refreshCalendars() {
-    renderInlineCalendar('fromGrid', 'fromMonthLabel', _calFromViewYear, _calFromViewMonth, true);
-    renderInlineCalendar('toGrid',   'toMonthLabel',   _calToViewYear,   _calToViewMonth,   false);
-}
+function refreshCalendars() { renderSingleCalendar(); }
 
 function updateRangeSummary() {
     const fromEl = document.getElementById('summaryFrom');
@@ -1067,25 +1264,17 @@ function hideCalError()    { document.getElementById('calError').style.display='
 
 function initCalendarViews() {
     if (_availableDates.length === 0) return;
-    const firstDate = ymdToDate(_availableDates[0]);
-    const lastDate  = ymdToDate(_availableDates[_availableDates.length - 1]);
-    _calFromViewYear  = firstDate.getFullYear();
-    _calFromViewMonth = firstDate.getMonth();
-    // To calendar: show last month of data (or next month from first if same)
-    if (lastDate.getFullYear() !== firstDate.getFullYear() || lastDate.getMonth() !== firstDate.getMonth()) {
-        _calToViewYear  = lastDate.getFullYear();
-        _calToViewMonth = lastDate.getMonth();
-    } else {
-        // Same month — advance to-cal by 1 month
-        let m = firstDate.getMonth() + 1, y = firstDate.getFullYear();
-        if (m > 11) { m = 0; y++; }
-        _calToViewYear = y; _calToViewMonth = m;
-    }
+    const lastDate = ymdToDate(_availableDates[_availableDates.length - 1]);
+    _calViewYear  = lastDate.getFullYear();
+    _calViewMonth = lastDate.getMonth();
 }
 
 function openCalendarModal() {
     if (_availableDates.length === 0) return;
     initCalendarViews();
+    _calClickState = _calFromYMD ? 'end' : 'start';
+    const hint = document.getElementById('calPickHint');
+    if (hint) hint.textContent = _calClickState === 'end' ? 'NOW CLICK END DATE' : 'CLICK START DATE';
     refreshCalendars();
     updateRangeSummary();
     updateApplyBtn();
@@ -1099,25 +1288,15 @@ function closeCalendarModal() {
     document.getElementById('btnOpenCalendar').classList.remove('active');
 }
 
-// Nav buttons
-function prevMonth(isFrom) {
-    if (isFrom) {
-        _calFromViewMonth--;
-        if (_calFromViewMonth < 0) { _calFromViewMonth = 11; _calFromViewYear--; }
-    } else {
-        _calToViewMonth--;
-        if (_calToViewMonth < 0) { _calToViewMonth = 11; _calToViewYear--; }
-    }
+// Nav buttons — single calendar
+function prevMonth() {
+    _calViewMonth--;
+    if (_calViewMonth < 0) { _calViewMonth = 11; _calViewYear--; }
     refreshCalendars();
 }
-function nextMonth(isFrom) {
-    if (isFrom) {
-        _calFromViewMonth++;
-        if (_calFromViewMonth > 11) { _calFromViewMonth = 0; _calFromViewYear++; }
-    } else {
-        _calToViewMonth++;
-        if (_calToViewMonth > 11) { _calToViewMonth = 0; _calToViewYear++; }
-    }
+function nextMonth() {
+    _calViewMonth++;
+    if (_calViewMonth > 11) { _calViewMonth = 0; _calViewYear++; }
     refreshCalendars();
 }
 
@@ -1203,6 +1382,8 @@ function aggregateFGInventory(fgRows, locSubstr, filterState) {
         if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
         const loc=String(row['location']||'').trim().toUpperCase(); if(!loc.includes(locUpper))continue;
         const line=normFGLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
+        // README v4: only Prime category counted
+        const cat=String(row['category']||'').trim().toLowerCase(); if(cat&&cat!=='prime')continue;
         const wt=safeFloat(row['net_wt'])||safeFloat(row['mass']); const age=safeFloat(row['bundle_age']);
         result[line][bucketAge(age)]=(result[line][bucketAge(age)]||0)+wt;
     }
@@ -1217,9 +1398,10 @@ function aggregateWithoutOrder(fgRows, filterState) {
         if(filterState.period==='CUSTOM'&&!isInRange(row['date_creation'],filterState.dateFrom,filterState.dateTo))continue;
         const line=normFGLine(row['proc_line']); if(!CONFIG.lines.includes(line))continue;
         const status=String(row['status']||'').trim().toUpperCase();
-        const orderId=String(row['order_id']||'').trim();
-        const isWF=status==='WF'; const noOrder=(!orderId||orderId==='0'||orderId.toLowerCase()==='no order');
-        if(!isWF&&!noOrder)continue;
+        const qh=String(row['quality_hold']||'').trim().toUpperCase();
+        // README v4: Status=WF AND QualityHold≠Y (exclude all QH material)
+        if(status!=='WF')continue;
+        if(qh==='Y')continue;
         res[line]+=safeFloat(row['net_wt'])||safeFloat(row['mass']);
     }
     return res;
@@ -1271,6 +1453,136 @@ Chart.register(ChartDataLabels);
 // ═══════════════════════════════════════════════════
 let _allData=null, _rawWb=null, _fileName='';
 
+// Per-line monthly expected production (MT) read from One Pager Report header block
+// e.g. { WCTL1: 13762, WCTL2: 16824, SLIT: 12804 }
+let _expectedByLine = {};
+
+function parseOnePagerExpectedRates(wb) {
+    // Try to read Expected Rate column from One Pager Report sheet header block
+    // Layout: Row N = Lines | On Date | | To Date | | Expected Rate | Actual Rate | Asking Rate
+    //         Row N+2 = WCTL1 | plan | actual | plan | actual | <ExpectedRate> | ...
+    _expectedByLine = {};
+    const sheetName = CONFIG.sheet_names.one_pager;
+    if (!wb.SheetNames.includes(sheetName)) return;
+    const ws = wb.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    // Find the row that has "Lines" in col 0 and "Expected Rate" somewhere in cols 1-8
+    let headerRow = -1;
+    for (let i = 0; i < Math.min(raw.length, 20); i++) {
+        const row = raw[i];
+        const col0 = String(row[0]||'').trim().toLowerCase();
+        // Look for "Expected Rate" in any of cols 1-8
+        const hasExpected = row.slice(1,9).some(c => String(c||'').trim().toLowerCase().includes('expected'));
+        if (col0 === 'lines' && hasExpected) { headerRow = i; break; }
+    }
+    if (headerRow < 0) return;
+    // Find which column index "Expected Rate" is in
+    let expCol = -1;
+    for (let c = 1; c < 10; c++) {
+        if (String(raw[headerRow][c]||'').trim().toLowerCase().includes('expected')) { expCol = c; break; }
+    }
+    if (expCol < 0) return;
+    // Read data rows below header (skip any sub-header rows that have non-numeric col 0 or match known lines)
+    const knownLines = ['WCTL1','WCTL2','SLIT'];
+    for (let i = headerRow + 1; i < Math.min(raw.length, headerRow + 10); i++) {
+        const row = raw[i];
+        const lineName = String(row[0]||'').trim().toUpperCase();
+        if (!knownLines.includes(lineName)) continue;
+        const expVal = parseFloat(row[expCol]);
+        if (!isNaN(expVal) && expVal > 0) _expectedByLine[lineName] = expVal;
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// PLANNING / TARGETS STATE
+// ═══════════════════════════════════════════════════
+let _planTargets = {
+    WCTL1: { monthly: 0, maintenanceHrs: 0, maintenanceType: '', maintenanceDate: '', maintenanceRemarks: '', apuTarget: 0, apuActual: 0 },
+    WCTL2: { monthly: 0, maintenanceHrs: 0, maintenanceType: '', maintenanceDate: '', maintenanceRemarks: '', apuTarget: 0, apuActual: 0 },
+    SLIT:  { monthly: 0, maintenanceHrs: 0, maintenanceType: '', maintenanceDate: '', maintenanceRemarks: '', apuTarget: 0, apuActual: 0 },
+};
+let _planTargetsApplied = false;
+
+function getDaysInRefMonth() {
+    if (!_latestProdDate) return 30;
+    const d = ymdToDate(_latestProdDate);
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+function getDaysElapsedInRefMonth() {
+    if (!_latestProdDate) return 0;
+    return ymdToDate(_latestProdDate).getDate();
+}
+
+function updatePlanAutoCalcs() {
+    const days = getDaysInRefMonth();
+    const daysElapsed = getDaysElapsedInRefMonth();
+    for (const line of CONFIG.lines) {
+        const monthlyInput = document.getElementById(`target-${line}-monthly`);
+        const monthly = monthlyInput ? (parseFloat(monthlyInput.value) || 0) : (_planTargets[line].monthly || 0);
+        const daily = days > 0 && monthly > 0 ? (monthly / days) : 0;
+        const onDate = daily;
+
+        const dailyEl  = document.getElementById(`target-${line}-daily`);
+        const ondateEl = document.getElementById(`target-${line}-ondate`);
+        if (dailyEl) {
+            dailyEl.textContent = daily > 0 ? daily.toFixed(1) + ' MT/day' : '—';
+            dailyEl.classList.toggle('has-val', daily > 0);
+        }
+        if (ondateEl) {
+            ondateEl.textContent = onDate > 0 ? onDate.toFixed(1) + ' MT' : '—';
+            ondateEl.classList.toggle('has-val', onDate > 0);
+        }
+    }
+}
+
+function updateApuAutoCalcs() {
+    for (const line of CONFIG.lines) {
+        const tEl = document.getElementById(`apu-${line}-target`);
+        const aEl = document.getElementById(`apu-${line}-actual`);
+        const vEl = document.getElementById(`apu-${line}-var`);
+        if (!vEl) continue;
+        const t = tEl ? (parseFloat(tEl.value) || 0) : 0;
+        const a = aEl ? (parseFloat(aEl.value) || 0) : 0;
+        if (t > 0 || a > 0) {
+            const diff = a - t;
+            vEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' pp';
+            vEl.style.color = diff >= 0 ? 'var(--accent3)' : 'var(--accent4)';
+            vEl.classList.add('has-val');
+        } else { vEl.textContent = '—'; vEl.classList.remove('has-val'); }
+    }
+}
+
+function applyTargetsFromInputs() {
+    for (const line of CONFIG.lines) {
+        const v = parseFloat(document.getElementById(`target-${line}-monthly`)?.value) || 0;
+        _planTargets[line].monthly = v;
+    }
+    _planTargetsApplied = true;
+}
+
+function applyMaintFromInputs() {
+    for (const line of CONFIG.lines) {
+        _planTargets[line].maintenanceHrs     = parseFloat(document.getElementById(`maint-${line}-hrs`)?.value) || 0;
+        _planTargets[line].maintenanceType    = document.getElementById(`maint-${line}-type`)?.value || '';
+        _planTargets[line].maintenanceDate    = document.getElementById(`maint-${line}-date`)?.value || '';
+        _planTargets[line].maintenanceRemarks = document.getElementById(`maint-${line}-remarks`)?.value || '';
+    }
+}
+
+function applyApuFromInputs() {
+    for (const line of CONFIG.lines) {
+        _planTargets[line].apuTarget = parseFloat(document.getElementById(`apu-${line}-target`)?.value) || 0;
+        _planTargets[line].apuActual = parseFloat(document.getElementById(`apu-${line}-actual`)?.value) || 0;
+    }
+}
+
+function getEffectiveMonthlyTarget(line) {
+    // Planning targets take priority over SAP-parsed expected rates
+    if (_planTargetsApplied && _planTargets[line].monthly > 0) return _planTargets[line].monthly;
+    if (_expectedByLine[line] && _expectedByLine[line] > 0) return _expectedByLine[line];
+    return 0;
+}
+
 // ═══════════════════════════════════════════════════
 // RENDER ALL
 // ═══════════════════════════════════════════════════
@@ -1303,19 +1615,39 @@ function renderAll() {
     document.getElementById('kpi-rm-transit').textContent=fmt(totalTransit);
 
     const rateEl=document.getElementById('kpi-expected-rate'); const resetBtn=document.getElementById('kpiRateResetBtn');
-    if(!rateEl._userOverride){
-        const autoRate=calculateExpectedRate(prodRm,visibleLines);
-        rateEl.value=autoRate!==null?(Math.round(autoRate*10)/10):'';
-        document.getElementById('kpi-rate-source').textContent='auto · MTD ÷ days'; resetBtn.style.display='none';
+    // Expected rates: planning targets > SAP file rates > manual override
+    const hasFiledRates=Object.keys(_expectedByLine).length>0;
+    // Build per-line monthly expected MT
+    const lineExpectedMonthly={};
+    for(const l of visibleLines){
+        lineExpectedMonthly[l] = getEffectiveMonthlyTarget(l);
+        // Fall back to manual override if nothing else is set
+        if(!lineExpectedMonthly[l] && rateEl._userOverride){
+            const overallManual=parseFloat(rateEl.value)||0;
+            const mtdLineMap2={}; let mtdTotalAll2=0;
+            for(const ll of visibleLines){mtdLineMap2[ll]=prod.mtd.rm[ll]||0;mtdTotalAll2+=mtdLineMap2[ll];}
+            lineExpectedMonthly[l]=mtdTotalAll2>0?overallManual*(mtdLineMap2[l]/mtdTotalAll2):0;
+        }
+    }
+    const totalExpectedMonthly=visibleLines.reduce((s,l)=>s+(lineExpectedMonthly[l]||0),0);
+    // Update KPI card: show total monthly expected from file (or override)
+    if(hasFiledRates&&!rateEl._userOverride){
+        rateEl.value=totalExpectedMonthly>0?Math.round(totalExpectedMonthly):'';
+        document.getElementById('kpi-rate-source').textContent='from SAP export'; resetBtn.style.display='none';
+    } else if(!rateEl._userOverride){
+        rateEl.value=''; document.getElementById('kpi-rate-source').textContent='not in file'; resetBtn.style.display='none';
     }
 
-    const overallRate=parseFloat(document.getElementById('kpi-expected-rate').value)||0;
-    const mtdLineMap={}; let mtdTotalAll=0;
-    for(const l of visibleLines){mtdLineMap[l]=prod.mtd.rm[l]||0;mtdTotalAll+=mtdLineMap[l];}
-    const lineExpectedRate={};
-    for(const l of visibleLines)lineExpectedRate[l]=mtdTotalAll>0?overallRate*(mtdLineMap[l]/mtdTotalAll):0;
     const latest2=_latestProdDate?ymdToDate(_latestProdDate):null;
     const daysElapsed2=latest2?latest2.getDate():0;
+    // Days in the reference month (for On-Date daily expected)
+    const daysInMonth2=latest2?new Date(latest2.getFullYear(),latest2.getMonth()+1,0).getDate():30;
+    // For custom range: count calendar days in range for to-date expected
+    let daysForToDate=daysElapsed2;
+    if(filterState.period==='CUSTOM'&&filterState.dateFrom&&filterState.dateTo){
+        const msPerDay=86400000;
+        daysForToDate=Math.round((filterState.dateTo-filterState.dateFrom)/msPerDay)+1;
+    }
 
     function deltaCell(actual,expected){
         if(!expected||expected===0)return`<td style="color:var(--muted)">—</td>`;
@@ -1324,25 +1656,52 @@ function renderAll() {
         return`<td style="color:${color};font-weight:700;">${sign}${fmt(diff)} (${sign}${pct}%)</td>`;
     }
 
-    // Last-Day table
+    // Unified production table with 7 columns:
+    // On Date Plan | On Date Actual | To Date Plan | To Date Actual | Expected Rate | Actual Rate | Asking Rate
     (function(){
         const tbody=document.getElementById('prodOnDateBody');tbody.innerHTML='';
-        let tRm=0,tExp=0;
-        for(const l of visibleLines){const actual=prod.onDate.rm[l];const exp=lineExpectedRate[l];tRm+=actual;tExp+=exp;tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td><td>${fmt(actual)}</td><td style="color:var(--muted);">${exp>0?fmt(exp):'—'}</td>${deltaCell(actual,exp)}</tr>`);}
-        if(!visibleLines.length)tbody.insertAdjacentHTML('beforeend','<tr><td colspan="4" class="no-data-msg">No data</td></tr>');
-        document.getElementById('prodOnDateTot').innerHTML=`<td>TOTAL</td><td>${fmt(tRm)}</td><td style="color:var(--muted);">${tExp>0?fmt(tExp):'—'}</td>${deltaCell(tRm,tExp)}`;
+        let tOnDatePlan=0,tOnDateAct=0,tToDatePlan=0,tToDateAct=0,tExpRate=0,tActRate=0,tAskRate=0;
+        const remainingDays = daysInMonth2>daysElapsed2 ? daysInMonth2-daysElapsed2 : 1;
+        for(const l of visibleLines){
+            const monthlyExp   = lineExpectedMonthly[l]||0;
+            const onDatePlan   = daysInMonth2>0&&monthlyExp>0 ? monthlyExp/daysInMonth2 : 0;
+            const onDateAct    = prod.onDate.rm[l];
+            const toDatePlan   = daysInMonth2>0&&monthlyExp>0 ? (monthlyExp/daysInMonth2)*daysElapsed2 : 0;
+            const toDateAct    = prod.mtd.rm[l];  // always use MTD (current-month actuals from RM)
+            const expRate      = monthlyExp;       // monthly ABP from One Pager
+            const actualRate   = daysElapsed2>0 ? toDateAct/daysElapsed2 : 0;
+            const askingRate   = remainingDays>0 ? Math.max(0,(monthlyExp-toDateAct)/remainingDays) : 0;
+            tOnDatePlan+=onDatePlan; tOnDateAct+=onDateAct;
+            tToDatePlan+=toDatePlan; tToDateAct+=toDateAct;
+            tExpRate+=expRate; tActRate+=actualRate; tAskRate+=askingRate;
+            tbody.insertAdjacentHTML('beforeend',
+                `<tr>
+                    <td>${l}</td>
+                    <td style="color:var(--muted);">${onDatePlan>0?fmt(onDatePlan):'—'}</td>
+                    <td>${fmt(onDateAct)}</td>
+                    <td style="color:var(--muted);">${toDatePlan>0?fmt(toDatePlan):'—'}</td>
+                    <td>${fmt(toDateAct)}</td>
+                    <td style="color:var(--accent);">${expRate>0?fmtInt(expRate):'—'}</td>
+                    <td style="color:var(--accent3);">${daysElapsed2>0?fmt(actualRate):'—'}</td>
+                    <td style="color:var(--accent2);">${expRate>0?fmt(askingRate):'—'}</td>
+                </tr>`);
+        }
+        if(!visibleLines.length)tbody.insertAdjacentHTML('beforeend','<tr><td colspan="8" class="no-data-msg">No data</td></tr>');
+        // Footer totals — Actual Rate and Asking Rate for totals
+        const totActRate = daysElapsed2>0 ? tToDateAct/daysElapsed2 : 0;
+        const totAskRate = remainingDays>0 ? Math.max(0,(tExpRate-tToDateAct)/remainingDays) : 0;
+        document.getElementById('prodOnDateTot').innerHTML=
+            `<td>TOTAL</td>` +
+            `<td>${tOnDatePlan>0?fmt(tOnDatePlan):'—'}</td>` +
+            `<td>${fmt(tOnDateAct)}</td>` +
+            `<td>${tToDatePlan>0?fmt(tToDatePlan):'—'}</td>` +
+            `<td>${fmt(tToDateAct)}</td>` +
+            `<td style="color:var(--accent);">${tExpRate>0?fmtInt(tExpRate):'—'}</td>` +
+            `<td style="color:var(--accent3);">${daysElapsed2>0?fmt(totActRate):'—'}</td>` +
+            `<td style="color:var(--accent2);">${tExpRate>0?fmt(totAskRate):'—'}</td>`;
     })();
 
-    // To-Date table
-    (function(){
-        const tbody=document.getElementById('prodToDateBody');tbody.innerHTML='';
-        let tRm=0,tExp=0;
-        for(const l of visibleLines){const actual=prod.effectiveToDate.rm[l];const exp=lineExpectedRate[l]*daysElapsed2;tRm+=actual;tExp+=exp;tbody.insertAdjacentHTML('beforeend',`<tr><td>${l}</td><td>${fmt(actual)}</td><td style="color:var(--muted);">${exp>0?fmt(exp):'—'}</td>${deltaCell(actual,exp)}</tr>`);}
-        if(!visibleLines.length)tbody.insertAdjacentHTML('beforeend','<tr><td colspan="4" class="no-data-msg">No data</td></tr>');
-        document.getElementById('prodToDateTot').innerHTML=`<td>TOTAL</td><td>${fmt(tRm)}</td><td style="color:var(--muted);">${tExp>0?fmt(tExp):'—'}</td>${deltaCell(tRm,tExp)}`;
-    })();
-
-    const onDateTitle=_latestProdDate?`On-Date Actual (${_latestProdDate.split('-').reverse().join('/')}) (MT)`:'On-Date Actual (MT)';
+    const onDateTitle=_latestProdDate?`Production Summary — Data as of ${_latestProdDate.split('-').reverse().join('/')}`:'Production Summary (MT)';
     document.getElementById('prodOnDateTitle').textContent=onDateTitle;
 
     function fillFGTable(bodyId,totId,data){
@@ -1385,8 +1744,18 @@ function renderAll() {
         const datasets=[];
         daily.visLines.forEach((l,i)=>datasets.push({label:l,data:daily.byLine[l],borderColor:lineColors[i%lineColors.length],backgroundColor:lineColors[i%lineColors.length].replace('0.85','0.08'),tension:0.35,fill:false,pointRadius:3,borderWidth:2,pointHoverRadius:5}));
         if(daily.visLines.length>1)datasets.push({label:'Total',data:daily.total,borderColor:'#fff',backgroundColor:'transparent',tension:0.35,fill:false,pointRadius:3,borderWidth:2.5,borderDash:[4,3],pointHoverRadius:5});
-        const expRateVal=parseFloat(document.getElementById('kpi-expected-rate').value);
+        const expRateVal=totalExpectedMonthly>0&&daysInMonth2>0?totalExpectedMonthly/daysInMonth2:0;
         if(expRateVal>0&&daily.dates.length>0)datasets.push({label:'Expected/day',data:daily.dates.map(()=>Math.round(expRateVal*10)/10),borderColor:CHART_COLORS.orange,backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,borderWidth:2,tension:0});
+        // Per-line target reference lines (from planning targets)
+        if(_planTargetsApplied&&daily.visLines.length>1){
+            daily.visLines.forEach((l,i)=>{
+                const lTarget=_planTargets[l]?.monthly||0;
+                if(lTarget>0&&daysInMonth2>0){
+                    const lDaily=lTarget/daysInMonth2;
+                    datasets.push({label:`${l} Target`,data:daily.dates.map(()=>Math.round(lDaily*10)/10),borderColor:lineColors[i%lineColors.length].replace('0.85','0.5'),backgroundColor:'transparent',borderDash:[3,3],pointRadius:0,borderWidth:1.5,tension:0});
+                }
+            });
+        }
         const noDataTicksX=daily.labels.length>20?{color:'#94a3b8',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}:{color:'#94a3b8',font:{size:11}};
         makeChart('chartProd',{type:'line',data:{labels:daily.labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},layout:{padding:{top:24,left:8,right:8,bottom:4}},interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#94a3b8',font:{size:11,family:"'Montserrat',monospace"},boxWidth:12}},datalabels:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${(ctx.parsed.y||0).toLocaleString('en-IN',{minimumFractionDigits:1,maximumFractionDigits:1})} MT`}}},scales:{x:{ticks:noDataTicksX,grid:{color:'rgba(30,45,74,0.8)'}},y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(30,45,74,0.8)'},title:{display:true,text:'MT',color:'#94a3b8',font:{size:10}}}}}});
     })();
@@ -1408,6 +1777,8 @@ function renderAll() {
 
     // Update button label
     updateCalBtnLabel();
+    // Refresh plan panel auto-calc fields in case daysInMonth changed
+    updatePlanAutoCalcs();
 }
 
 function updateCalBtnLabel() {
@@ -1452,6 +1823,7 @@ function renderDashboard(wb, fileName) {
     }
 
     _allData={fgRows,rmRows,prodFg,prodRm};
+    parseOnePagerExpectedRates(wb);
     _availableDates=buildAvailableDates([...prodFg,...prodRm]);
     _availableDateSet=new Set(_availableDates);
     _latestProdDate=_availableDates.length>0?_availableDates[_availableDates.length-1]:'';
@@ -1462,7 +1834,7 @@ function renderDashboard(wb, fileName) {
     const rateEl=document.getElementById('kpi-expected-rate');
     rateEl._userOverride=false; rateEl.value='';
     document.getElementById('kpiRateResetBtn').style.display='none';
-    document.getElementById('kpi-rate-source').textContent='auto · MTD ÷ days';
+    document.getElementById('kpi-rate-source').textContent='from SAP export';
     document.getElementById('filterLine').value='ALL';
     document.getElementById('filterShift').value='ALL';
     document.getElementById('dataBadge').classList.remove('filtered');
@@ -1501,13 +1873,31 @@ function downloadPDF() {
     const fileName=_fileName||'SAP Export';
     const latestStr=_latestProdDate?` · Latest: ${_latestProdDate.split('-').reverse().join('/')}` :'';
     const expectedRate=document.getElementById('kpi-expected-rate').value||'—';
+    // Build planning targets HTML for PDF
+    const daysInPdf = getDaysInRefMonth();
+    function planTargetsTableHTML() {
+        const hasTargets = CONFIG.lines.some(l=>_planTargets[l].monthly>0);
+        if(!hasTargets && !_planTargetsApplied) return '';
+        let rows = CONFIG.lines.map(l => {
+            const m = _planTargets[l].monthly || 0;
+            const d = daysInPdf > 0 && m > 0 ? (m/daysInPdf).toFixed(1) : '—';
+            const maint = _planTargets[l].maintenanceHrs > 0 ? `${_planTargets[l].maintenanceHrs}h (${_planTargets[l].maintenanceType||'—'})` : '—';
+            const apuT = _planTargets[l].apuTarget > 0 ? `${_planTargets[l].apuTarget}%` : '—';
+            const apuA = _planTargets[l].apuActual > 0 ? `${_planTargets[l].apuActual}%` : '—';
+            return `<tr><td>${l}</td><td>${m>0?m.toLocaleString('en-IN'):'—'}</td><td>${d}</td><td>${maint}</td><td>${apuT}</td><td>${apuA}</td></tr>`;
+        }).join('');
+        return `<div class="section-title">Planning Targets & Machine Data</div>
+        <div class="card"><div class="card-title">Machine Targets / APU / Maintenance</div><div class="card-body" style="overflow-x:auto;">
+        <table><thead><tr><th>Line</th><th>Monthly Target (MT)</th><th>Daily Target (MT/d)</th><th>Maintenance</th><th>APU Target</th><th>APU Actual</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+    }
     function buildProdTableHTML(bodyId,title){const bodyHTML=stripTbodyTags(tableHTML(bodyId));return`<div class="card"><div class="card-title">${title}</div><div class="card-body"><table><thead><tr><th>Line</th><th>RM (MT)</th></tr></thead><tbody>${bodyHTML}</tbody></table></div></div>`;}
     function chartCard(chartId,title){if(!chartSnapshots[chartId])return'';return`<div class="card"><div class="card-title">${title}</div><div class="card-body"><img class="chart-img" src="${chartSnapshots[chartId]}"></div></div>`;}
     const pdfCSS=['*{box-sizing:border-box;margin:0;padding:0}',"body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a2e;font-size:11px}",'.page{width:100%;padding:14px 18px}','.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0284c7;padding-bottom:8px;margin-bottom:14px}','.header-title{font-size:20px;font-weight:700;color:#0284c7;letter-spacing:1px}','.header-sub{font-size:11px;color:#555;margin-top:3px}','.header-date{font-size:11px;color:#555;text-align:right}','.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}','.kpi-card{border:1px solid #d0e4f0;border-radius:6px;padding:8px 10px;background:#f0f8ff;text-align:center}','.kpi-label{font-size:9px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}','.kpi-value{font-size:17px;font-weight:700;color:#0284c7;line-height:1}','.kpi-unit{font-size:8px;color:#777;margin-top:2px}','.section-title{font-size:10px;font-weight:700;color:#0284c7;text-transform:uppercase;letter-spacing:1.5px;border-left:3px solid #0284c7;padding-left:7px;margin:12px 0 7px}','.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}','.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}','.card{border:1px solid #d0e4f0;border-radius:6px;overflow:hidden;break-inside:avoid}','.card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;padding:7px 10px;background:#f0f8ff;border-bottom:1px solid #d0e4f0}','.card-body{padding:8px}','table{width:100%;border-collapse:collapse;font-size:10px}','th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;text-align:right;padding:5px 6px;border-bottom:1px solid #ccc;background:#f7fafc}','th:first-child{text-align:left}','td{padding:4px 6px;border-bottom:1px solid #eee;text-align:right;color:#333}','td:first-child{text-align:left;font-weight:600}','tfoot td{font-weight:700;color:#0284c7;border-top:1px solid #999;border-bottom:none;background:#f0f8ff}','.chart-img{width:100%;height:auto;display:block}','.footer{border-top:1px solid #ccc;margin-top:14px;padding-top:8px;font-size:9px;color:#888;display:flex;justify-content:space-between}','@media print{@page{size:A3 landscape;margin:10mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'].join('\n');
     const tsdplTableHTML=document.getElementById('tsdplTable')?document.getElementById('tsdplTable').outerHTML:'';
     const cpdyTableHTML=document.getElementById('cpdyTable')?document.getElementById('cpdyTable').outerHTML:'';
     const rmTotHTML=document.getElementById('rmTot')?'<tfoot>'+document.getElementById('rmTot').outerHTML+'</tfoot>':'';
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kalinganagar Plant One-Pager — ${dateStr}</title><style>${pdfCSS}</style></head><body><div class="page"><div class="header"><div><div class="header-title">KALINGANAGAR PLANT — ONE-PAGER REPORT</div><div class="header-sub">${fileName}${latestStr}</div></div><div class="header-date">Generated: ${dateStr}<br>${now.toLocaleTimeString('en-IN')}</div></div><div class="kpi-strip"><div class="kpi-card"><div class="kpi-label">Last Day Prod</div><div class="kpi-value">${kpiVal('kpi-fg-total')}</div><div class="kpi-unit">MT RM</div></div><div class="kpi-card"><div class="kpi-label">MTD</div><div class="kpi-value">${kpiVal('kpi-rm-total')}</div><div class="kpi-unit">MT MTD RM</div></div><div class="kpi-card"><div class="kpi-label">Expected Rate</div><div class="kpi-value" style="color:#059669">${expectedRate}</div><div class="kpi-unit">MT/day</div></div><div class="kpi-card"><div class="kpi-label">Quality Hold</div><div class="kpi-value" style="color:#dc2626">${kpiVal('kpi-qhold')}</div><div class="kpi-unit">MT held</div></div><div class="kpi-card"><div class="kpi-label">Without Order</div><div class="kpi-value" style="color:#d97706">${kpiVal('kpi-wo')}</div><div class="kpi-unit">MT unallocated</div></div><div class="kpi-card"><div class="kpi-label">RM In-Transit</div><div class="kpi-value">${kpiVal('kpi-rm-transit')}</div><div class="kpi-unit">MT incoming</div></div></div><div class="section-title">Production Report (RM)</div><div class="grid-2">${buildProdTableHTML('prodOnDateBody','On-Date Actual (MT)')}${buildProdTableHTML('prodToDateBody','To-Date Actual (MT)')}</div><div class="section-title">FG Inventory — Age Buckets</div><div class="grid-2"><div class="card"><div class="card-title">TSDPL Location</div><div class="card-body" style="overflow-x:auto;">${tsdplTableHTML}</div></div><div class="card"><div class="card-title">CPDY Location</div><div class="card-body" style="overflow-x:auto;">${cpdyTableHTML}</div></div></div><div class="section-title">Visual Analytics</div><div class="grid-3">${chartCard('chartQHWF','Without-Order & Quality Hold')}${chartCard('chartRM','RM In-Stock vs In-Transit')}${chartCard('chartProd','Production')}</div><div class="section-title">Without-Order, Quality Hold &amp; RM Status</div><div class="grid-2"><div class="grid-2" style="gap:8px;"><div class="card"><div class="card-title">Without-Order WF</div><div class="card-body"><table><thead><tr><th>Line</th><th>MT</th></tr></thead><tbody>${document.getElementById('woBody').innerHTML}</tbody><tfoot><tr>${document.getElementById('woTot').innerHTML}</tr></tfoot></table></div></div><div class="card"><div class="card-title">Quality Hold</div><div class="card-body"><table><thead><tr><th>Line</th><th>MT</th></tr></thead><tbody>${document.getElementById('qhBody').innerHTML}</tbody><tfoot><tr>${document.getElementById('qhTot').innerHTML}</tr></tfoot></table></div></div></div><div class="grid-2" style="gap:8px;">${chartCard('chartFGSplit','FG Split — TSDPL vs CPDY')}${chartCard('chartQRisk','Quality Risk Profile')}</div></div><div class="section-title">RM Status by Line</div><div class="card"><div class="card-body" style="overflow-x:auto;"><table><thead><tr><th>Line</th><th>≤3d Count</th><th>≤3d MT</th><th>&gt;3d Count</th><th>&gt;3d MT</th><th>In-Stock Count</th><th>In-Stock MT</th><th>In-Transit MT</th></tr></thead>${stripTbodyTags(tableHTML('rmBody'))}${rmTotHTML}</table></div></div><div class="footer"><span>Kalinganagar Plant Analytics · Pure browser</span><span>Generated ${dateStr} · ${fileName}</span></div></div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>`;
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kalinganagar Plant One-Pager — ${dateStr}</title><style>${pdfCSS}</style></head><body><div class="page"><div class="header"><div><div class="header-title">KALINGANAGAR PLANT — ONE-PAGER REPORT</div><div class="header-sub">${fileName}${latestStr}</div></div><div class="header-date">Generated: ${dateStr}<br>${now.toLocaleTimeString('en-IN')}</div></div><div class="kpi-strip"><div class="kpi-card"><div class="kpi-label">Last Day Prod</div><div class="kpi-value">${kpiVal('kpi-fg-total')}</div><div class="kpi-unit">MT RM</div></div><div class="kpi-card"><div class="kpi-label">MTD</div><div class="kpi-value">${kpiVal('kpi-rm-total')}</div><div class="kpi-unit">MT MTD RM</div></div><div class="kpi-card"><div class="kpi-label">Expected Rate</div><div class="kpi-value" style="color:#059669">${expectedRate}</div><div class="kpi-unit">MT/day</div></div><div class="kpi-card"><div class="kpi-label">Quality Hold</div><div class="kpi-value" style="color:#dc2626">${kpiVal('kpi-qhold')}</div><div class="kpi-unit">MT held</div></div><div class="kpi-card"><div class="kpi-label">Without Order</div><div class="kpi-value" style="color:#d97706">${kpiVal('kpi-wo')}</div><div class="kpi-unit">MT unallocated</div></div><div class="kpi-card"><div class="kpi-label">RM In-Transit</div><div class="kpi-value">${kpiVal('kpi-rm-transit')}</div><div class="kpi-unit">MT incoming</div></div></div><div class="section-title">Production Report (RM)</div><div class="grid-2">${buildProdTableHTML('prodOnDateBody','On-Date Actual (MT)')}${buildProdTableHTML('prodToDateBody','To-Date Actual (MT)')}</div>${planTargetsTableHTML()}<div class="section-title">FG Inventory — Age Buckets</div><div class="grid-2"><div class="card"><div class="card-title">TSDPL Location</div><div class="card-body" style="overflow-x:auto;">${tsdplTableHTML}</div></div><div class="card"><div class="card-title">CPDY Location</div><div class="card-body" style="overflow-x:auto;">${cpdyTableHTML}</div></div></div><div class="section-title">Visual Analytics</div><div class="grid-3">${chartCard('chartQHWF','Without-Order & Quality Hold')}${chartCard('chartRM','RM In-Stock vs In-Transit')}${chartCard('chartProd','Production')}</div><div class="section-title">Without-Order, Quality Hold &amp; RM Status</div><div class="grid-2"><div class="grid-2" style="gap:8px;"><div class="card"><div class="card-title">Without-Order WF</div><div class="card-body"><table><thead><tr><th>Line</th><th>MT</th></tr></thead><tbody>${document.getElementById('woBody').innerHTML}</tbody><tfoot><tr>${document.getElementById('woTot').innerHTML}</tr></tfoot></table></div></div><div class="card"><div class="card-title">Quality Hold</div><div class="card-body"><table><thead><tr><th>Line</th><th>MT</th></tr></thead><tbody>${document.getElementById('qhBody').innerHTML}</tbody><tfoot><tr>${document.getElementById('qhTot').innerHTML}</tr></tfoot></table></div></div></div><div class="grid-2" style="gap:8px;">${chartCard('chartFGSplit','FG Split — TSDPL vs CPDY')}${chartCard('chartQRisk','Quality Risk Profile')}</div></div><div class="section-title">RM Status by Line</div><div class="card"><div class="card-body" style="overflow-x:auto;"><table><thead><tr><th>Line</th><th>≤3d Count</th><th>≤3d MT</th><th>&gt;3d Count</th><th>&gt;3d MT</th><th>In-Stock Count</th><th>In-Stock MT</th><th>In-Transit MT</th></tr></thead>${stripTbodyTags(tableHTML('rmBody'))}${rmTotHTML}</table></div></div><div class="footer"><span>Kalinganagar Plant Analytics · Pure browser</span><span>Generated ${dateStr} · ${fileName}</span></div></div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>`;
     try{
         const blob=new Blob([html],{type:'text/html;charset=utf-8'});
         const blobURL=URL.createObjectURL(blob);
@@ -1546,8 +1936,8 @@ function processFile(file){
 function showError(msg){const el=document.getElementById('uploadError');el.style.display='block';el.textContent=msg;document.getElementById('loadingOverlay').classList.remove('active');}
 
 function resetToDrop(){
-    _rawWb=null;_allData=null;_fileName='';_processingLock=false;_availableDates=[];_availableDateSet=new Set();_latestProdDate='';
-    _calFromYMD=null;_calToYMD=null;
+    _rawWb=null;_allData=null;_fileName='';_processingLock=false;_availableDates=[];_availableDateSet=new Set();_latestProdDate='';_expectedByLine={};
+    _calFromYMD=null;_calToYMD=null;_calClickState='start';
     destroyAllCharts();
     document.getElementById('fileInput').value='';
     document.getElementById('uploadError').style.display='none';
@@ -1557,13 +1947,16 @@ function resetToDrop(){
     const rateEl=document.getElementById('kpi-expected-rate');
     rateEl._userOverride=false;rateEl.value='';
     document.getElementById('kpiRateResetBtn').style.display='none';
-    document.getElementById('kpi-rate-source').textContent='auto · MTD ÷ days';
+    document.getElementById('kpi-rate-source').textContent='from SAP export';
     document.getElementById('filterLine').value='ALL';
     document.getElementById('filterShift').value='ALL';
     document.getElementById('dataBadge').classList.remove('filtered');
     document.querySelectorAll('.line-tab').forEach(t=>t.classList.toggle('active',t.dataset.line==='ALL'));
     closeCalendarModal();
     updateCalBtnLabel();
+    // Reset planning panel
+    document.getElementById('planningPanel').classList.remove('open');
+    document.getElementById('btnPlanToggle').classList.remove('active');
 }
 
 // ═══════════════════════════════════════════════════
@@ -1580,7 +1973,7 @@ document.getElementById('downloadBtn').addEventListener('click',downloadPDF);
 
 // Expected Rate override
 document.getElementById('kpi-expected-rate').addEventListener('input',function(){this._userOverride=true;document.getElementById('kpi-rate-source').textContent='manual override';document.getElementById('kpiRateResetBtn').style.display='inline';});
-document.getElementById('kpiRateResetBtn').addEventListener('click',function(){const rateEl=document.getElementById('kpi-expected-rate');rateEl._userOverride=false;this.style.display='none';document.getElementById('kpi-rate-source').textContent='auto · MTD ÷ days';renderAll();});
+document.getElementById('kpiRateResetBtn').addEventListener('click',function(){const rateEl=document.getElementById('kpi-expected-rate');rateEl._userOverride=false;this.style.display='none';document.getElementById('kpi-rate-source').textContent='from SAP export';renderAll();});
 
 // Line tabs
 document.querySelectorAll('.line-tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('.line-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active');_filterState.line=this.dataset.line;document.getElementById('filterLine').value=this.dataset.line;renderAll();});});
@@ -1594,11 +1987,9 @@ document.getElementById('btnOpenCalendar').addEventListener('click',()=>{if(_ava
 document.getElementById('btnCloseCalendar').addEventListener('click',closeCalendarModal);
 document.getElementById('calendarModal').addEventListener('click',function(e){if(e.target===this)closeCalendarModal();});
 
-// Calendar nav buttons
-document.getElementById('fromPrev').addEventListener('click',()=>prevMonth(true));
-document.getElementById('fromNext').addEventListener('click',()=>nextMonth(true));
-document.getElementById('toPrev').addEventListener('click',()=>prevMonth(false));
-document.getElementById('toNext').addEventListener('click',()=>nextMonth(false));
+// Single calendar nav
+document.getElementById('singlePrev').addEventListener('click',()=>prevMonth());
+document.getElementById('singleNext').addEventListener('click',()=>nextMonth());
 
 // Apply range
 document.getElementById('btnCalApply').addEventListener('click',function(){
@@ -1615,7 +2006,8 @@ document.getElementById('btnCalApply').addEventListener('click',function(){
 
 // Clear range
 document.getElementById('btnCalClear').addEventListener('click',function(){
-    _calFromYMD=null;_calToYMD=null;
+    _calFromYMD=null;_calToYMD=null;_calClickState='start';
+    const hint=document.getElementById('calPickHint'); if(hint) hint.textContent='CLICK START DATE';
     updateRangeSummary();updateApplyBtn();
     refreshCalendars();hideCalError();
     _filterState.period='ALL';_filterState.dateFrom=null;_filterState.dateTo=null;
@@ -1626,7 +2018,7 @@ document.getElementById('btnCalClear').addEventListener('click',function(){
 // Reset all filters
 document.getElementById('btnResetFilters').addEventListener('click',function(){
     _filterState={line:'ALL',period:'ALL',shift:'ALL',dateFrom:null,dateTo:null};
-    _calFromYMD=null;_calToYMD=null;
+    _calFromYMD=null;_calToYMD=null;_calClickState='start';
     document.getElementById('filterLine').value='ALL';
     document.getElementById('filterShift').value='ALL';
     document.getElementById('dataBadge').classList.remove('filtered');
@@ -1638,6 +2030,103 @@ document.getElementById('btnResetFilters').addEventListener('click',function(){
 
 // Close modal on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCalendarModal();});
+
+// ─── PLANNING PANEL ───────────────────────────────
+document.getElementById('btnPlanToggle').addEventListener('click',function(){
+    const panel=document.getElementById('planningPanel');
+    const isOpen=panel.classList.toggle('open');
+    this.classList.toggle('active',isOpen);
+});
+
+// Plan tabs
+document.querySelectorAll('.plan-tab-btn').forEach(btn=>{
+    btn.addEventListener('click',function(){
+        document.querySelectorAll('.plan-tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.plan-tab-content').forEach(c=>c.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('planTab-'+this.dataset.planTab).classList.add('active');
+    });
+});
+
+// Live auto-calc for target inputs
+CONFIG.lines.forEach(line=>{
+    const inp=document.getElementById(`target-${line}-monthly`);
+    if(inp) inp.addEventListener('input',updatePlanAutoCalcs);
+});
+
+// APU live calc
+CONFIG.lines.forEach(line=>{
+    ['target','actual'].forEach(type=>{
+        const inp=document.getElementById(`apu-${line}-${type}`);
+        if(inp) inp.addEventListener('input',updateApuAutoCalcs);
+    });
+});
+
+// Save targets
+document.getElementById('btnSaveTargets').addEventListener('click',function(){
+    applyTargetsFromInputs();
+    updatePlanAutoCalcs();
+    const msg=document.getElementById('planSaveMsg');
+    msg.style.display='inline';
+    if(_allData) renderAll();
+    setTimeout(()=>{ msg.style.display='none'; },3000);
+});
+
+// Save maintenance
+document.getElementById('btnSaveMaint').addEventListener('click',function(){
+    applyMaintFromInputs();
+    const msg=document.getElementById('maintSaveMsg');
+    msg.style.display='inline';
+    setTimeout(()=>{ msg.style.display='none'; },2500);
+});
+
+// Save APU
+document.getElementById('btnSaveApu').addEventListener('click',function(){
+    applyApuFromInputs();
+    updateApuAutoCalcs();
+    const msg=document.getElementById('apuSaveMsg');
+    msg.style.display='inline';
+    setTimeout(()=>{ msg.style.display='none'; },2500);
+});
+
+// Planning file upload
+document.getElementById('planFileInput').addEventListener('change',function(e){
+    const file=e.target.files&&e.target.files[0]; if(!file)return;
+    if(!file.name.match(/\.xlsx?$/i))return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+        try{
+            const data=new Uint8Array(ev.target.result);
+            const wb=XLSX.read(data,{type:'array',cellDates:false});
+            parseOnePagerExpectedRates(wb);
+            // Also update target inputs from parsed data
+            for(const l of CONFIG.lines){
+                const v=_expectedByLine[l]||0;
+                const inp=document.getElementById(`target-${l}-monthly`);
+                if(inp&&v>0){inp.value=Math.round(v); _planTargets[l].monthly=v;}
+            }
+            _planTargetsApplied=true;
+            updatePlanAutoCalcs();
+            if(_allData) renderAll();
+            const s=document.getElementById('planUploadStatus');
+            s.style.display='block';
+            setTimeout(()=>{s.style.display='none';},4000);
+        }catch(err){console.warn('Plan file parse error:',err);}
+        finally{e.target.value='';}
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+const planDropZone=document.getElementById('planDropZone');
+planDropZone.addEventListener('dragover',e=>{e.preventDefault();planDropZone.classList.add('dragover');});
+planDropZone.addEventListener('dragleave',()=>planDropZone.classList.remove('dragover'));
+planDropZone.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();planDropZone.classList.remove('dragover');
+    if(e.dataTransfer.files&&e.dataTransfer.files.length>0){
+        const input=document.getElementById('planFileInput');
+        const dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);input.files=dt.files;input.dispatchEvent(new Event('change'));
+    }
+});
 </script>
 </body>
 </html>
